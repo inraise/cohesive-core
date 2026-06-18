@@ -1,0 +1,3 @@
+module cohesive-core
+
+go 1.26.2
