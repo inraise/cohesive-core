@@ -30,7 +30,6 @@ func NewDbPool(ctx context.Context) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("Ошибка подключения к БД: %w", err)
 	}
 
-	defer dbPool.Close()
 	pgxCtx, cancelPgx := context.WithTimeout(ctx, 5*time.Second)
 	defer cancelPgx()
 
