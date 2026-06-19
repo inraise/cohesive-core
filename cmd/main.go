@@ -37,7 +37,7 @@ func main() {
 	router.Use(middleware.Recoverer)
 
 	router.Post("/api/v1/auth/register", authHandler.RegistrationUser)
-	router.Post("/api/v1/auth/login", authHandler.LoginUser) 
+	router.Post("/api/v1/auth/login", authHandler.LoginUser)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
