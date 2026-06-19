@@ -13,13 +13,12 @@ import (
 //go:embed migrations
 var migrationFiles embed.FS
 
-func RunMigrations() error {
+func runMigrations(connStr string) error {
 	driver, err := iofs.New(migrationFiles, "migrations")
 	if err != nil {
 		return fmt.Errorf("Ошибка инициализации: %w", err)
 	}
 
-	connStr := GetConnStr()
 	m, err := migrate.NewWithSourceInstance("iofs", driver, connStr)
 	if err != nil {
 		return fmt.Errorf("Ошибка создания мигратора: %w", err)

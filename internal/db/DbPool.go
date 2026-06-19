@@ -9,7 +9,10 @@ import (
 )
 
 func NewDbPool(ctx context.Context) (*pgxpool.Pool, error) {
-	connStr := GetConnStr()
+	connStr := getConnStr()
+	if err := runMigrations(connStr); err != nil {
+		return nil, fmt.Errorf("Ошибка миграции: %w", err)
+	}
 
 	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
