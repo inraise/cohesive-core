@@ -14,6 +14,6 @@ type Family struct {
 	UpdatedAt  time.Time `db:"updated_at" json:"updated_at"`
 }
 
-type CreateFamilyRequest struct {
+type FamilyRequest struct {
 	Name string `json:"name"`
 }

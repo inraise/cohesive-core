@@ -27,7 +27,7 @@ func (h *FamilyHandler) CreateFamily(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input models.CreateFamilyRequest
+	var input models.FamilyRequest
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Неверный формат JSON", http.StatusBadRequest)
 		return
@@ -47,4 +47,40 @@ func (h *FamilyHandler) CreateFamily(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(family)
+}
+
+func (h *FamilyHandler) UpdateFamily(w http.ResponseWriter, r *http.Request) {
+	userIDStr := r.Header.Get("UserId")
+	familyIDStr := r.Header.Get("FamilyId")
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		http.Error(w, "Отсутствует или неверный заголовок UserId", http.StatusUnauthorized)
+		return
+	}
+
+	familyID, err := uuid.Parse(familyIDStr)
+	if err != nil {
+		http.Error(w, "Отсутствует или неверный заголовок FamilyId", http.StatusBadRequest)
+		return
+	}
+
+	var input models.FamilyRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Неверный формат JSON", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.UpdateFamily(r.Context(), familyID, userID, input)
+	if err != nil {
+		if err.Error() == "У вас нет прав на редактирование этой семьи или она не существует" {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
+		http.Error(w, "Ошибка обновления: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status": "success"}`))
 }

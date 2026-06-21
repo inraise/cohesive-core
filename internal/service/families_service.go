@@ -5,8 +5,10 @@ import (
 	"cohesive-core/internal/repository"
 	"context"
 	"crypto/rand"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type FamilyService struct {
@@ -21,7 +23,7 @@ func NewFamilyService(repo *repository.FamilyRepository) *FamilyService {
 
 func (s *FamilyService) CreateFamily(
 	ctx context.Context,
-	req models.CreateFamilyRequest,
+	req models.FamilyRequest,
 	userID uuid.UUID,
 ) (*models.Family, error) {
 	inviteCode, err := generateInviteCode(8)
@@ -52,4 +54,25 @@ func generateInviteCode(n int) (string, error) {
 		bytes[i] = letters[b%byte(len(letters))]
 	}
 	return string(bytes), nil
+}
+
+func (s *FamilyService) UpdateFamily(
+	ctx context.Context,
+	familyID uuid.UUID,
+	userID uuid.UUID,
+	req models.FamilyRequest,
+) error {
+	if req.Name == "" {
+		return errors.New("Название семьи не может быть пустым")
+	}
+
+	err := s.repo.UpdateFamilyName(ctx, familyID, userID, req.Name)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errors.New("У вас нет прав на редактирование этой семьи или она не существует")
+		}
+		return err
+	}
+
+	return nil
 }

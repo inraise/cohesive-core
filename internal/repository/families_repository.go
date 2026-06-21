@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -23,7 +24,10 @@ func NewFamilyRepository(db *pgxpool.Pool) *FamilyRepository {
 	}
 }
 
-func (r *FamilyRepository) CreateFamily(ctx context.Context, family *models.Family, userId uuid.UUID) error {
+func (r *FamilyRepository) CreateFamily(
+	ctx context.Context,
+	family *models.Family,
+	userId uuid.UUID) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -51,4 +55,30 @@ func (r *FamilyRepository) CreateFamily(ctx context.Context, family *models.Fami
 	}
 
 	return tx.Commit(ctx)
+}
+
+func (r *FamilyRepository) UpdateFamilyName(
+	ctx context.Context,
+	familyID uuid.UUID,
+	userID uuid.UUID,
+	newName string,
+) error {
+	query := `
+		UPDATE families 
+		SET name = $1, updated_at = NOW()
+		WHERE id = $2 AND EXISTS (
+			SELECT 1 FROM family_members 
+			WHERE family_id = $2 AND user_id = $3 AND role = 'admin'
+		)`
+
+	res, err := r.db.Exec(ctx, query, newName, familyID, userID)
+	if err != nil {
+		return err
+	}
+
+	if res.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+
+	return nil
 }

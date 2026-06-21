@@ -45,6 +45,7 @@ func main() {
 
 	// families
 	router.Post("/api/v1/family", familyHandler.CreateFamily)
+	router.Put("/api/v1/family", familyHandler.UpdateFamily)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
