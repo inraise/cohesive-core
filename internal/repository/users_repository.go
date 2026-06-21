@@ -11,12 +11,6 @@ import (
 Модуль 1: Аутентификация и Управление Семьей
 • POST /api/v1/auth/register — Регистрация
 • POST /api/v1/auth/login — Логин
-• POST /api/v1/family — Создать новую семью
-• PUT /api/v1/family — Обновить данные семьи (название)
-• POST /api/v1/family/join — Войти по invite_code
-• DELETE /api/v1/family/leave — Выйти из семьи
-• PATCH /api/v1/family/members/{user_id} — Изменить роль (admin/member/child)
-• DELETE /api/v1/family/members/{user_id} — Удалить человека из семьи
 */
 
 type AuthRepository struct {
