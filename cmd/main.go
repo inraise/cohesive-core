@@ -32,12 +32,19 @@ func main() {
 	authService := service.NewAuthService(repos.Auth)
 	authHandler := handler.NewAuthHandler(authService)
 
+	familyService := service.NewFamilyService(repos.Family)
+	familyHandler := handler.NewFamilyHandler(familyService)
+
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
+	// users
 	router.Post("/api/v1/auth/register", authHandler.RegistrationUser)
 	router.Post("/api/v1/auth/login", authHandler.LoginUser)
+
+	// families
+	router.Post("/api/v1/family", familyHandler.CreateFamily)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
