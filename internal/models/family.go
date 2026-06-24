@@ -17,3 +17,11 @@ type Family struct {
 type FamilyRequest struct {
 	Name string `json:"name"`
 }
+
+type JoinFamilyRequest struct {
+	InviteCode string `json:"invite_code"`
+}
+
+type UpdateRoleRequest struct {
+	Role string `json:"role"`
+}

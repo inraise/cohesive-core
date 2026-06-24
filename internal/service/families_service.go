@@ -76,3 +76,47 @@ func (s *FamilyService) UpdateFamily(
 
 	return nil
 }
+
+func (s *FamilyService) JoinFamily(
+	ctx context.Context,
+	req models.JoinFamilyRequest,
+	userID string,
+) error {
+	if req.InviteCode == "" {
+		return errors.New("Инвайт-код не может быть пустым")
+	}
+	return s.repo.JoinFamily(ctx, req.InviteCode, userID)
+}
+
+func (s *FamilyService) LeaveFamily(ctx context.Context, userID string) error {
+	return s.repo.LeaveFamily(ctx, userID)
+}
+
+func (s *FamilyService) UpdateMemberRole(
+	ctx context.Context,
+	familyID, actorID, targetUserID string,
+	newRole string,
+) error {
+	if newRole != "admin" && newRole != "member" && newRole != "child" {
+		return errors.New("Неверный тип роли")
+	}
+
+	isAdmin, err := s.repo.IsAdmin(ctx, familyID, actorID)
+	if err != nil || !isAdmin {
+		return errors.New("У вас нет прав администратора")
+	}
+
+	return s.repo.UpdateMemberRole(ctx, familyID, targetUserID, newRole)
+}
+
+func (s *FamilyService) KickMember(
+	ctx context.Context,
+	familyID, actorID, targetUserID string,
+) error {
+	isAdmin, err := s.repo.IsAdmin(ctx, familyID, actorID)
+	if err != nil || !isAdmin {
+		return errors.New("У вас нет прав администратора")
+	}
+
+	return s.repo.KickMember(ctx, familyID, targetUserID)
+}

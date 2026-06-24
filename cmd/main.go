@@ -46,6 +46,10 @@ func main() {
 	// families
 	router.Post("/api/v1/family", familyHandler.CreateFamily)
 	router.Put("/api/v1/family", familyHandler.UpdateFamily)
+	router.Post("/api/v1/family/join", familyHandler.JoinFamily)
+	router.Delete("/api/v1/family/leave", familyHandler.LeaveFamily)
+	router.Patch("/api/v1/family/members/{user_id}", familyHandler.UpdateMemberRole)
+	router.Delete("/api/v1/family/members/{user_id}", familyHandler.KickMember)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {

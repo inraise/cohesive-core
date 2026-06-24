@@ -3,16 +3,12 @@ package repository
 import (
 	"cohesive-core/internal/models"
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-/*
-POST /api/v1/family — Создать новую семью
-PUT /api/v1/family — Обновить данные семьи (название)
-*/
 
 type FamilyRepository struct {
 	db *pgxpool.Pool
@@ -81,4 +77,97 @@ func (r *FamilyRepository) UpdateFamilyName(
 	}
 
 	return nil
+}
+
+func (r *FamilyRepository) JoinFamily(
+	ctx context.Context,
+	inviteCode string,
+	userID string,
+) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	var familyID uuid.UUID
+	familyQuery := `SELECT id FROM families WHERE invite_code = $1`
+	err = tx.QueryRow(ctx, familyQuery, inviteCode).Scan(&familyID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return errors.New("Неверный инвайт-код")
+		}
+		return err
+	}
+
+	memberQuery := `
+		INSERT INTO family_members (family_id, user_id, role, joined_at)
+		VALUES ($1, $2, 'member', NOW())
+		ON CONFLICT (family_id, user_id) DO NOTHING`
+
+	res, err := tx.Exec(ctx, memberQuery, familyID, userID)
+	if err != nil {
+		return err
+	}
+
+	if res.RowsAffected() == 0 {
+		return errors.New("Вы уже состоите в этой семье")
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *FamilyRepository) LeaveFamily(ctx context.Context, userID string) error {
+	query := `DELETE FROM family_members WHERE user_id = $1`
+	res, err := r.db.Exec(ctx, query, userID)
+	if err != nil {
+		return err
+	}
+	if res.RowsAffected() == 0 {
+		return errors.New("Вы не состоите ни в одной семье")
+	}
+	return nil
+}
+
+func (r *FamilyRepository) UpdateMemberRole(
+	ctx context.Context,
+	familyID, targetUserID string,
+	newRole string,
+) error {
+	query := `
+		UPDATE family_members 
+		SET role = $1::role_members 
+		WHERE family_id = $2 AND user_id = $3`
+
+	res, err := r.db.Exec(ctx, query, newRole, familyID, targetUserID)
+	if err != nil {
+		return err
+	}
+	if res.RowsAffected() == 0 {
+		return errors.New("Участник не найден в этой семье")
+	}
+	return nil
+}
+
+func (r *FamilyRepository) KickMember(ctx context.Context, familyID, targetUserID string) error {
+	query := `DELETE FROM family_members WHERE family_id = $1 AND user_id = $2`
+	res, err := r.db.Exec(ctx, query, familyID, targetUserID)
+	if err != nil {
+		return err
+	}
+	if res.RowsAffected() == 0 {
+		return errors.New("Участник не найден в этой семье")
+	}
+	return nil
+}
+
+func (r *FamilyRepository) IsAdmin(ctx context.Context, familyID, userID string) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM family_members 
+			WHERE family_id = $1 AND user_id = $2 AND role = 'admin'
+		)`
+	var isAdmin bool
+	err := r.db.QueryRow(ctx, query, familyID, userID).Scan(&isAdmin)
+	return isAdmin, err
 }
