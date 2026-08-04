@@ -1,84 +1,287 @@
-# Cohesive Core Backend
+# Cohesive Core
 
-Компонент распределённой экосистемы управления семейными процессами, отвечающий за бизнес-логику и хранение данных. Приложение реализовано на языке Go с использованием принципов чистой архитектуры (Clean Architecture) и реляционной СУБД PostgreSQL. 
+Бэкенд-сервис на Go для приложения по учёту домохозяйств: авторизация пользователей, домохозяйства и связанные с ними сущности. Построен как модульный монолит с чётким разделением инфраструктуры и бизнес-логики.
 
----
+-----
 
-## Технологический стек
+## Содержание
 
-| Компонент | Решение |
-|---|---|
-| Язык разработки | Go (Golang) 1.21+ |
-| База данных | PostgreSQL |
-| Драйвер БД и пул соединений | `jackc/pgx/v5` |
-| Маршрутизация HTTP | `go-chi/chi/v5` |
-| Аутентификация и авторизация | JWT (JSON Web Tokens) |
-| Управление миграциями схемы БД | `golang-migrate` |
-| Контейнеризация | Docker, Docker Compose |
+- [Архитектура](#-архитектура)
+- [Стек технологий](#-стек-технологий)
+- [Быстрый старт](#-быстрый-старт)
+- [Переменные окружения](#-переменные-окружения)
+- [Команды Makefile](#-команды-makefile)
+- [API](#-api)
+- [Схема базы данных](#-схема-базы-данных)
+- [Логирование](#-логирование)
+- [Roadmap](#-roadmap)
 
----
+-----
 
-## Архитектурная структура проекта
+## 🏗 Архитектура
 
-Приложение разделено на независимые слои в соответствии с методологией **Clean Architecture**.
+Проект следует принципам **Clean Architecture** внутри **модульного монолита**: общая инфраструктура вынесена в `internal/core`, а бизнес-логика изолирована по фичам в `internal/features`, каждая — со своими слоями `repository → service → transport`.
 
-```
-.
-├── cmd/                  # Точка входа в приложение
+```text
+cohesive-core/
+├── cmd/
+│   └── cohesive/
+│       ├── main.go            # Точка входа: сборка зависимостей и запуск сервера
+│       └── Dockerfile
+│
 ├── internal/
-│   ├── models/           # Доменные сущности и DTO
-│   ├── repository/       # Слой доступа к данным (DAL)
-│   ├── service/          # Слой бизнес-логики (Use Cases)
-│   └── handler/          # Транспортный слой (Presentation Layer)
-└── migrations/           # SQL-миграции схемы БД
+│   ├── core/                  # Инфраструктурный слой, общий для всех фич
+│   │   ├── config/            # Общая конфигурация приложения (тайм-зона и т.п.)
+│   │   ├── domain/             # Общие доменные типы (User и др.)
+│   │   ├── errors/             # Базовые доменные ошибки (NotFound, Conflict, ...)
+│   │   ├── logger/              # Обёртка над zap + ротация файлов логов
+│   │   ├── repository/postgres/ # Пул соединений с PostgreSQL (pgx)
+│   │   └── transport/http/      # HTTP-сервер: роутер, middleware, request/response
+│   │
+│   └── features/
+│       └── auth/                # Регистрация и авторизация пользователей
+│           ├── repository/postgres/  # SQL-запросы
+│           ├── service/              # Бизнес-логика (хеширование пароля, валидация)
+│           └── transport/http/       # HTTP-хендлеры и DTO
+│
+├── migrations/                 # SQL-миграции (golang-migrate)
+├── docker-compose.yaml         # cohesive, cohesive-postgres, migrate, port-forwarder
+├── Makefile
+└── .env.example
 ```
 
-### Описание слоёв
+**Ключевые архитектурные решения:**
 
-- **`cmd/`** — Точка входа (`main.go`). Считывание конфигурации, инициализация пула соединений, сборка зависимостей (Dependency Injection) и запуск HTTP-сервера.
-- **`internal/models/`** — Доменные сущности системы и структуры данных для обмена (DTO). Не содержат внешней логики.
-- **`internal/repository/`** — Слой доступа к данным (Data Access Layer). Реализует взаимодействие с PostgreSQL, управление транзакциями и выполнение SQL-запросов.
-- **`internal/service/`** — Слой бизнес-логики (Use Cases). Содержит валидацию данных, хэширование паролей, генерацию токенов и алгоритмы синхронизации. Взаимодействует с хранилищем через интерфейсы.
-- **`internal/handler/`** — Транспортный слой (Presentation Layer). Обработка входящих HTTP-запросов, декодирование JSON и формирование стандартизированных ответов со статус-кодами.
+- **API-роутинг с версионированием.** `APIVersionRouter` регистрирует роуты фичи под префиксом `/api/v1`, который «срезается» перед тем, как запрос доходит до хендлера — фичи ничего не знают о версии API.
+- **Единая цепочка middleware.** На сервер накручены `CORS → RequestID → Logger → Trace → Panic` — запросы логируются и трассируются сквозным `request_id`, а паника в хендлере не роняет процесс.
+- **Фичи не знают друг о друге.** `auth` работает только через собственный интерфейс `AuthService` и общий `core_domain.User` — добавление новой фичи (например, `households`) не требует правок в существующих.
+- **Явные ошибки домена.** `core/errors` определяет базовый набор ошибок (`ErrNotFound`, `ErrInvalidArgument`, `ErrConflict`), которые оборачиваются на каждом слое и мапятся в HTTP-статусы в `response`-пакете.
 
----
+-----
 
-## Локальное развёртывание
+## 🧰 Стек технологий
 
-### 1. Подготовка окружения
+|Категория          |Технология                                                                |
+|-------------------|--------------------------------------------------------------------------|
+|Язык               |Go 1.26                                                                   |
+|HTTP               |`net/http` (`http.ServeMux`), без веб-фреймворка                          |
+|База данных        |PostgreSQL 17 + [`pgx/v5`](https://github.com/jackc/pgx) (connection pool)|
+|Миграции           |[`golang-migrate`](https://github.com/golang-migrate/migrate)             |
+|Логирование        |[`zap`](https://github.com/uber-go/zap)                                   |
+|Конфигурация       |[`envconfig`](https://github.com/kelseyhightower/envconfig)               |
+|Валидация          |[`go-playground/validator`](https://github.com/go-playground/validator)   |
+|Хеширование паролей|`bcrypt`                                                                  |
+|Контейнеризация    |Docker / Docker Compose                                                   |
 
-Создайте файл `.env` в корневом каталоге проекта:
+-----
 
-```env
-APP_PORT=8080
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=your_secure_password
-DB_NAME=cohesive_db
-JWT_SECRET=your_jwt_secret_key
-```
+## 🚀 Быстрый старт
 
-### 2. Инициализация базы данных
+### Предварительные требования
 
-Запустите контейнер с PostgreSQL через Docker Compose:
+- Go 1.26+
+- Docker и Docker Compose
+
+### 1. Переменные окружения
 
 ```bash
-docker-compose up -d
+cp .env.example .env
 ```
 
-### 3. Применение миграций
+Заполните `.env` своими значениями (см. [таблицу переменных](#-переменные-окружения) ниже).
 
-Выполните накат миграций для формирования актуальной структуры таблиц, индексов и ограничений:
+### 2. База данных
+
+Поднять только PostgreSQL в Docker:
 
 ```bash
-migrate -path ./migrations \
-  -database "postgres://postgres:your_secure_password@localhost:5432/cohesive_db?sslmode=disable" \
-  up
+make env-up
+```
+
+### 3. Миграции
+
+```bash
+make migrate-up
 ```
 
 ### 4. Запуск приложения
 
+Локально (без контейнера, БД — из шага 2):
+
 ```bash
-go run cmd/main.go
+make cohesive-run
 ```
+
+Сервис поднимется на адресе, указанном в `HTTP_ADDR` (по умолчанию `http://localhost:5050`).
+
+### Альтернатива: всё в Docker
+
+Если не хочется поднимать Go локально — можно собрать и запустить сам сервис в контейнере:
+
+```bash
+make cohesive-deploy   # сборка и запуск контейнера cohesive
+make cohesive-undeploy # остановка
+```
+
+-----
+
+## ⚙️ Переменные окружения
+
+|Переменная             |Обязательна|По умолчанию|Описание                                               |
+|-----------------------|-----------|------------|-------------------------------------------------------|
+|`HTTP_ADDR`            |✅          |—           |Адрес, на котором слушает HTTP-сервер, например `:5050`|
+|`HTTP_SHUTDOWN_TIMEOUT`|           |`30s`       |Таймаут graceful shutdown                              |
+|`ALLOWED_ORIGINS`      |✅          |—           |Список origin’ов для CORS через запятую                |
+|`POSTGRES_HOST`        |✅          |—           |Хост PostgreSQL                                        |
+|`POSTGRES_PORT`        |           |`5432`      |Порт PostgreSQL                                        |
+|`POSTGRES_USER`        |✅          |—           |Пользователь БД                                        |
+|`POSTGRES_PASSWORD`    |✅          |—           |Пароль БД                                              |
+|`POSTGRES_DB`          |✅          |—           |Имя базы данных                                        |
+|`POSTGRES_TIMEOUT`     |✅          |—           |Таймаут соединения с БД                                |
+|`JWT_SECRET`           |           |—           |Секрет для подписи JWT (зарезервировано, см. Roadmap)  |
+|`LOGGER_LEVEL`         |           |`DEBUG`     |Уровень логирования                                    |
+|`LOGGER_FOLDER`        |✅          |—           |Папка для файлов логов                                 |
+|`TIME_ZONE`            |           |`UTC`       |Тайм-зона приложения                                   |
+
+
+> При запуске через `make cohesive-run` переменные `LOGGER_FOLDER` и `POSTGRES_HOST` подставляются автоматически (логи пишутся в `./out/logs`, БД — на `localhost`).
+
+-----
+
+## 🛠 Команды Makefile
+
+|Команда                                |Что делает                                                                    |
+|---------------------------------------|------------------------------------------------------------------------------|
+|`make env-up`                          |Поднять PostgreSQL для локальной разработки                                   |
+|`make env-down`                        |Остановить PostgreSQL                                                         |
+|`make env-port-forward`                |Прокинуть порт `5432` наружу через `socat` (доступ к БД из контейнера снаружи)|
+|`make env-port-close`                  |Закрыть проброс порта                                                         |
+|`make env-cleanup`                     |Полностью снести окружение и данные БД (с подтверждением)                     |
+|`make migrate-create seq=<name>`       |Создать новую пару миграций `up`/`down`                                       |
+|`make migrate-up` / `make migrate-down`|Применить / откатить миграции                                                 |
+|`make cohesive-run`                    |Запустить приложение локально (`go run`)                                      |
+|`make cohesive-deploy`                 |Собрать и запустить приложение в Docker                                       |
+|`make cohesive-undeploy`               |Остановить контейнер приложения                                               |
+|`make logs-cleanup`                    |Очистить локальные логи (с подтверждением)                                    |
+|`make ps`                              |Статус контейнеров Compose                                                    |
+
+-----
+
+## 📡 API
+
+Базовый префикс всех эндпоинтов фич: **`/api/v1`**.
+
+### `POST /api/v1/auth/register`
+
+Регистрация нового пользователя.
+
+**Request body**
+
+```json
+{
+  "email": "user@example.com",
+  "password": "supersecurepassword",
+  "first_name": "John",
+  "last_name": "Doe",
+  "age": 28
+}
+```
+
+|Поле        |Тип   |Обязательно|Валидация                                   |
+|------------|------|-----------|--------------------------------------------|
+|`email`     |string|✅          |5–100 символов                              |
+|`password`  |string|✅          |10–100 символов, хранится в виде bcrypt-хеша|
+|`first_name`|string|✅          |3–100 символов                              |
+|`last_name` |string|—          |3–100 символов                              |
+|`age`       |int   |—          |0–130                                       |
+
+**Response `201 Created`**
+
+```json
+{
+  "id": "e5c1f2b0-...-uuid",
+  "version": 1,
+  "email": "user@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "age": 28,
+  "created_at": "2026-08-04T05:00:00Z",
+  "updated_at": "2026-08-04T05:00:00Z"
+}
+```
+
+**Ответ с ошибкой**
+
+```json
+{
+  "error": "validate user domain: invalid `Email` len: 3: invalid argument",
+  "message": "failed to create user"
+}
+```
+
+**Пример запроса**
+
+```bash
+curl -X POST http://localhost:5050/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "supersecurepassword",
+    "first_name": "John",
+    "last_name": "Doe",
+    "age": 28
+  }'
+```
+
+-----
+
+## 🗄 Схема базы данных
+
+Таблица `users` (миграция `000001_init_schema`):
+
+|Колонка        |Тип           |Ограничения                                |
+|---------------|--------------|-------------------------------------------|
+|`id`           |`UUID`        |`PRIMARY KEY`, `DEFAULT uuid_generate_v4()`|
+|`version`      |`INT`         |`NOT NULL DEFAULT 1`                       |
+|`email`        |`VARCHAR(100)`|`UNIQUE NOT NULL`, длина 5–100             |
+|`password_hash`|`VARCHAR(255)`|`NOT NULL`                                 |
+|`first_name`   |`VARCHAR(100)`|`NOT NULL`, длина 1–100                    |
+|`last_name`    |`VARCHAR(100)`|длина 1–100, nullable                      |
+|`age`          |`INT`         |0–130, nullable                            |
+|`created_at`   |`TIMESTAMPTZ` |                                           |
+|`updated_at`   |`TIMESTAMPTZ` |`CHECK(created_at <= updated_at)`          |
+
+-----
+
+## 📋 Логирование
+
+Логи пишутся через `zap` в структурированном виде и складываются в `LOGGER_FOLDER` отдельным файлом на каждый запуск сервиса (имя файла — таймстемп старта). Уровень регулируется переменной `LOGGER_LEVEL`. Каждый HTTP-запрос получает `request_id`, который прокидывается через middleware и попадает в логи для сквозной трассировки.
+
+-----
+
+## 🗺 Roadmap
+
+Проект в активной разработке. В ближайших планах:
+
+**🔒 Авторизация и безопасность**
+
+- [ ] JWT-аутентификация (access & refresh токены), `JWT_SECRET` уже зарезервирован в конфиге
+- [ ] Middleware для защиты приватных эндпоинтов
+- [ ] Эндпоинт логина
+
+**👥 Модуль пользователей**
+
+- [ ] `GET /api/v1/users/me` и обновление профиля
+- [ ] Роли и права доступа
+
+**🏠 Модуль домохозяйств**
+
+- [ ] Создание и редактирование домохозяйств
+- [ ] Приглашение участников по ссылке/коду
+- [ ] Разграничение прав внутри группы
+
+**🧪 Качество и CI/CD**
+
+- [ ] Unit-тесты для слоёв service и repository (моки)
+- [ ] Интеграционные тесты через `testcontainers-go`
+- [ ] `golangci-lint` и CI/CD pipeline на GitHub Actions
