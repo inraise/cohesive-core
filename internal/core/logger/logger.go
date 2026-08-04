@@ -1,6 +1,7 @@
 package core_logger
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,6 +9,12 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+type loggerContextKey struct{}
+
+var (
+	key = loggerContextKey{}
 )
 
 type Logger struct {
@@ -53,4 +60,30 @@ func NewLogger(config LoggerConfig) (*Logger, error) {
 		Logger: zapLogger,
 		file:   logFile,
 	}, nil
+}
+
+func ToContext(ctx context.Context, log *Logger) context.Context {
+	return context.WithValue(ctx, key, log)
+}
+
+func FromContext(ctx context.Context) *Logger {
+	log, ok := ctx.Value(key).(*Logger)
+	if !ok {
+		panic("no logger in context")
+	}
+
+	return log
+}
+
+func (l *Logger) With(field ...zap.Field) *Logger {
+	return &Logger{
+		Logger: l.Logger.With(field...),
+		file:   l.file,
+	}
+}
+
+func (l *Logger) Close() {
+	if err := l.file.Close(); err != nil {
+		fmt.Println("failed to close app logger:", err)
+	}
 }
