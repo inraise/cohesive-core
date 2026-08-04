@@ -1,63 +1,78 @@
 package main
 
 import (
-	"cohesive-core/internal/db"
-	"cohesive-core/internal/handler"
-	"cohesive-core/internal/repository"
-	"cohesive-core/internal/service"
+	core_config "cohesive-core/internal/core/config"
+	core_logger "cohesive-core/internal/core/logger"
+	core_pool_pgx "cohesive-core/internal/core/repository/postgres/pool/pgx"
+	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
+	core_transport_http_server "cohesive-core/internal/core/transport/http/server"
+	auth_repository_postgres "cohesive-core/internal/features/auth/repository/postgres"
+	auth_service "cohesive-core/internal/features/auth/service"
+	auth_transport_http "cohesive-core/internal/features/auth/transport/http"
 	"context"
 	"fmt"
-	"log"
-	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		fmt.Println("Ошибка загрузки файла .env")
-	}
+	cfg := core_config.NewConfigMust()
+	time.Local = cfg.TimeZone
 
-	dbPool, err := db.NewDbPool(context.Background())
+	ctx, cancel := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT, syscall.SIGTERM,
+	)
+	defer cancel()
+
+	logger, err := core_logger.NewLogger(core_logger.NewConfigMust())
 	if err != nil {
-		log.Fatalf("Не удалось подключиться к БД: %v", err)
+		fmt.Println("failed to init app logger:", err)
+		os.Exit(1)
 	}
-	defer dbPool.Close()
+	defer logger.Close()
 
-	repos := repository.NewRepository(dbPool)
-
-	authService := service.NewAuthService(repos.Auth)
-	authHandler := handler.NewAuthHandler(authService)
-
-	familyService := service.NewFamilyService(repos.Family)
-	familyHandler := handler.NewFamilyHandler(familyService)
-
-	router := chi.NewRouter()
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
-
-	// users
-	router.Post("/api/v1/auth/register", authHandler.RegistrationUser)
-	router.Post("/api/v1/auth/login", authHandler.LoginUser)
-
-	// families
-	router.Post("/api/v1/family", familyHandler.CreateFamily)
-	router.Put("/api/v1/family", familyHandler.UpdateFamily)
-	router.Post("/api/v1/family/join", familyHandler.JoinFamily)
-	router.Delete("/api/v1/family/leave", familyHandler.LeaveFamily)
-	router.Patch("/api/v1/family/members/{user_id}", familyHandler.UpdateMemberRole)
-	router.Delete("/api/v1/family/members/{user_id}", familyHandler.KickMember)
-
-	port := os.Getenv("APP_PORT")
-	if port == "" {
-		port = "8080"
+	logger.Debug("app time zone", zap.Any("time_zone", time.Local))
+	logger.Debug("initializing postgres connection pool")
+	pool, err := core_pool_pgx.NewPool(
+		ctx,
+		core_pool_pgx.NewConfigMust(),
+	)
+	if err != nil {
+		logger.Fatal("failed to init connection pool", zap.Error(err))
 	}
+	defer pool.Close()
 
-	log.Printf("Сервер успешно запущен на порту :%s", port)
-	if err := http.ListenAndServe(":"+port, router); err != nil {
-		log.Fatalf("Ошибка запуска сервера: %v", err)
+	logger.Debug("initializing feature", zap.String("feature", "users"))
+	authRepository := auth_repository_postgres.NewAuthRepository(pool)
+	authService := auth_service.NewAuthService(authRepository)
+	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
+
+	logger.Debug("initializing HTTP server")
+
+	httpConfig := core_transport_http_server.NewConfigMust()
+	httpServer := core_transport_http_server.NewHTTPServer(
+		httpConfig,
+		logger,
+		core_transport_http_middleware.CORS(httpConfig.AllowedOrigins),
+		core_transport_http_middleware.RequestID(),
+		core_transport_http_middleware.Logger(logger),
+		core_transport_http_middleware.Trace(),
+		core_transport_http_middleware.Panic(),
+	)
+
+	apiVersionRouterV1 := core_transport_http_server.NewAPIVersionRouter(
+		core_transport_http_server.ApiVersion1,
+	)
+
+	apiVersionRouterV1.RegisterRoutes(authTransportHTTP.Routes()...)
+	httpServer.RegisterAPIRoutes(apiVersionRouterV1)
+
+	if err := httpServer.Run(ctx); err != nil {
+		logger.Error("HTTP server run error", zap.Error(err))
 	}
 }
