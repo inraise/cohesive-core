@@ -139,6 +139,7 @@ make cohesive-undeploy # остановка
 |`POSTGRES_DB`          |+          |—           |Имя базы данных                                        |
 |`POSTGRES_TIMEOUT`     |+          |—           |Таймаут соединения с БД                                |
 |`JWT_SECRET`           |           |—           |Секрет для подписи JWT (зарезервировано, см. Roadmap)  |
+|`JWT_ACCESS_TTL`       |           |`15m`       |TTL для JWT ключа                                      |
 |`LOGGER_LEVEL`         |           |`DEBUG`     |Уровень логирования                                    |
 |`LOGGER_FOLDER`        |+          |—           |Папка для файлов логов                                 |
 |`TIME_ZONE`            |           |`UTC`       |Тайм-зона приложения                                   |
@@ -233,6 +234,25 @@ curl -X POST http://localhost:5050/api/v1/auth/register \
   }'
 ```
 
+### `POST /api/v1/auth/login` 
+
+Аутентификация пользователя и получение токенов.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword"
+}
+```
+**Response (200 OK):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1Ni...",
+  "expires_at": "2026-08-05T20:00:00Z"
+}
+```
+
 -----
 
 ## Схема базы данных
@@ -262,12 +282,6 @@ curl -X POST http://localhost:5050/api/v1/auth/register \
 ## Roadmap
 
 Проект в активной разработке. В ближайших планах:
-
-**Авторизация и безопасность**
-
-- [ ] JWT-аутентификация (access & refresh токены), `JWT_SECRET` уже зарезервирован в конфиге
-- [ ] Middleware для защиты приватных эндпоинтов
-- [ ] Эндпоинт логина
 
 **Модуль пользователей**
 
