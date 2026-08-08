@@ -11,8 +11,9 @@ import (
 )
 
 type LoginDTOResponse struct {
-	AccessToken string    `json:"access_token"`
-	ExpiresAt   time.Time `json:"expires_at"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
 
 func (s *AuthService) LoginUser(
@@ -40,8 +41,14 @@ func (s *AuthService) LoginUser(
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}
 
+	refreshToken, err := s.issueRefreshToken(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("issue refresh token: %w", err)
+	}
+
 	return &LoginDTOResponse{
-		AccessToken: accessToken,
-		ExpiresAt:   expiresAt,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresAt:    expiresAt,
 	}, nil
 }

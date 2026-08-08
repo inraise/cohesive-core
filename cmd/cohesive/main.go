@@ -57,7 +57,7 @@ func main() {
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	authRepository := auth_repository_postgres.NewAuthRepository(pool)
-	authService := auth_service.NewAuthService(authRepository, tokenManager)
+	authService := auth_service.NewAuthService(authRepository, tokenManager, jwtConfig.RefreshTTL)
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
 
 	logger.Debug("initializing HTTP server")
