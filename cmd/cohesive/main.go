@@ -2,6 +2,7 @@ package main
 
 import (
 	core_config "cohesive-core/internal/core/config"
+	core_jwt "cohesive-core/internal/core/jwt"
 	core_logger "cohesive-core/internal/core/logger"
 	core_pool_pgx "cohesive-core/internal/core/repository/postgres/pool/pgx"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
@@ -47,9 +48,16 @@ func main() {
 	}
 	defer pool.Close()
 
+	logger.Debug("initializing JWT token manager")
+	jwtConfig := core_jwt.NewConfigMust()
+	tokenManager, err := core_jwt.NewTokenManager(jwtConfig.SecretKey, jwtConfig.AccessTTL)
+	if err != nil {
+		logger.Fatal("failed to init JWT token manager", zap.Error(err))
+	}
+
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	authRepository := auth_repository_postgres.NewAuthRepository(pool)
-	authService := auth_service.NewAuthService(authRepository)
+	authService := auth_service.NewAuthService(authRepository, tokenManager, jwtConfig.RefreshTTL)
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
 
 	logger.Debug("initializing HTTP server")
