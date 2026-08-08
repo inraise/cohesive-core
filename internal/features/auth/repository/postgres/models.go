@@ -20,3 +20,14 @@ type UserModel struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
+
+type RefreshTokenModel struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+
+	TokenHash string
+
+	ExpiresAt time.Time
+	RevokedAt *time.Time
+	CreatedAt time.Time
+}

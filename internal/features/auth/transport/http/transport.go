@@ -17,6 +17,21 @@ type AuthService interface {
 		ctx context.Context,
 		user auth_service.CreateUserRequest,
 	) (core_domain.User, error)
+
+	LoginUser(
+		ctx context.Context,
+		email, password string,
+	) (*auth_service.LoginDTOResponse, error)
+
+	RefreshToken(
+		ctx context.Context,
+		refreshToken string,
+	) (*auth_service.LoginDTOResponse, error)
+
+	LogoutUser(
+		ctx context.Context,
+		refreshToken string,
+	) error
 }
 
 func NewAuthHTTPHandler(
@@ -33,6 +48,21 @@ func (h *AuthHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:  http.MethodPost,
 			Path:    "/auth/register",
 			Handler: h.CreateUser,
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/auth/login",
+			Handler: h.LoginUser,
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/auth/refresh",
+			Handler: h.RefreshToken,
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/auth/logout",
+			Handler: h.LogoutUser,
 		},
 	}
 }
