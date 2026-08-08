@@ -32,16 +32,17 @@ cohesive-core/
 ├── internal/
 │   ├── core/                  # Инфраструктурный слой, общий для всех фич
 │   │   ├── config/            # Общая конфигурация приложения (тайм-зона и т.п.)
-│   │   ├── domain/             # Общие доменные типы (User и др.)
-│   │   ├── errors/             # Базовые доменные ошибки (NotFound, Conflict, ...)
+│   │   ├── domain/             # Общие доменные типы (User, RefreshToken и др.)
+│   │   ├── errors/             # Базовые доменные ошибки (NotFound, Conflict, Unauthorized, ...)
+│   │   ├── jwt/                 # Генерация и валидация JWT access-токенов
 │   │   ├── logger/              # Обёртка над zap + ротация файлов логов
 │   │   ├── repository/postgres/ # Пул соединений с PostgreSQL (pgx)
-│   │   └── transport/http/      # HTTP-сервер: роутер, middleware, request/response
+│   │   └── transport/http/      # HTTP-сервер: роутер, middleware (в т.ч. Auth), request/response
 │   │
 │   └── features/
-│       └── auth/                # Регистрация и авторизация пользователей
-│           ├── repository/postgres/  # SQL-запросы
-│           ├── service/              # Бизнес-логика (хеширование пароля, валидация)
+│       └── auth/                # Регистрация, логин, refresh и logout
+│           ├── repository/postgres/  # SQL-запросы (users, refresh_tokens)
+│           ├── service/              # Бизнес-логика (хеширование пароля, JWT, ротация refresh-токенов)
 │           └── transport/http/       # HTTP-хендлеры и DTO
 │
 ├── migrations/                 # SQL-миграции (golang-migrate)
@@ -55,7 +56,8 @@ cohesive-core/
 - **API-роутинг с версионированием.** `APIVersionRouter` регистрирует роуты фичи под префиксом `/api/v1`, который «срезается» перед тем, как запрос доходит до хендлера — фичи ничего не знают о версии API.
 - **Единая цепочка middleware.** На сервер накручены `CORS → RequestID → Logger → Trace → Panic` — запросы логируются и трассируются сквозным `request_id`, а паника в хендлере не роняет процесс.
 - **Фичи не знают друг о друге.** `auth` работает только через собственный интерфейс `AuthService` и общий `core_domain.User` — добавление новой фичи (например, `households`) не требует правок в существующих.
-- **Явные ошибки домена.** `core/errors` определяет базовый набор ошибок (`ErrNotFound`, `ErrInvalidArgument`, `ErrConflict`), которые оборачиваются на каждом слое и мапятся в HTTP-статусы в `response`-пакете.
+- **Явные ошибки домена.** `core/errors` определяет базовый набор ошибок (`ErrNotFound`, `ErrInvalidArgument`, `ErrConflict`, `ErrUnauthorized`), которые оборачиваются на каждом слое и мапятся в HTTP-статусы в `response`-пакете.
+- **Stateless access + отзываемый refresh.** Access-токен — обычный подписанный JWT (`core/jwt`), сервер его не хранит и не может отозвать раньше `exp` (15 минут). Refresh-токен — непрозрачная случайная строка, её SHA-256 хеш живёт в таблице `refresh_tokens`; именно это позволяет по-настоящему отзывать сессии на `/auth/logout` и делать ротацию на `/auth/refresh`.
 
 -----
 
@@ -71,6 +73,7 @@ cohesive-core/
 |Конфигурация       |[`envconfig`](https://github.com/kelseyhightower/envconfig)               |
 |Валидация          |[`go-playground/validator`](https://github.com/go-playground/validator)   |
 |Хеширование паролей|`bcrypt`                                                                  |
+|Токены             |JWT ([`golang-jwt/jwt/v5`](https://github.com/golang-jwt/jwt)) для access, opaque-строка + SHA-256 для refresh|
 |Контейнеризация    |Docker / Docker Compose                                                   |
 
 -----
@@ -138,8 +141,9 @@ make cohesive-undeploy # остановка
 |`POSTGRES_PASSWORD`    |+          |—           |Пароль БД                                              |
 |`POSTGRES_DB`          |+          |—           |Имя базы данных                                        |
 |`POSTGRES_TIMEOUT`     |+          |—           |Таймаут соединения с БД                                |
-|`JWT_SECRET`           |           |—           |Секрет для подписи JWT (зарезервировано, см. Roadmap)  |
-|`JWT_ACCESS_TTL`       |           |`15m`       |TTL для JWT ключа                                      |
+|`JWT_SECRET`           |+          |—           |Секрет для подписи access-токенов (HMAC)               |
+|`JWT_ACCESS_TTL`       |           |`15m`       |Время жизни access-токена                              |
+|`JWT_REFRESH_TTL`      |           |`720h`      |Время жизни refresh-токена (30 дней)                   |
 |`LOGGER_LEVEL`         |           |`DEBUG`     |Уровень логирования                                    |
 |`LOGGER_FOLDER`        |+          |—           |Папка для файлов логов                                 |
 |`TIME_ZONE`            |           |`UTC`       |Тайм-зона приложения                                   |
@@ -234,23 +238,94 @@ curl -X POST http://localhost:5050/api/v1/auth/register \
   }'
 ```
 
-### `POST /api/v1/auth/login` 
+-----
 
-Аутентификация пользователя и получение токенов.
+### `POST /api/v1/auth/login`
 
-**Request Body:**
+Логин по email/паролю. Выдаёт пару токенов: короткоживущий access (JWT, `JWT_ACCESS_TTL`) и долгоживущий refresh (opaque-строка, `JWT_REFRESH_TTL`), хеш которого сохраняется в `refresh_tokens`.
+
+**Request body**
+
 ```json
 {
   "email": "user@example.com",
-  "password": "securepassword"
+  "password": "supersecurepassword"
 }
 ```
-**Response (200 OK):**
+
+**Response `200 OK`**
+
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1Ni...",
-  "expires_at": "2026-08-05T20:00:00Z"
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "9f1c2b7a3e5d...",
+  "expires_at": "2026-08-08T12:15:00Z"
 }
+```
+
+`expires_at` относится к `access_token`. Неверный email или пароль дают `400 Bad Request` — намеренно одну и ту же ошибку для обоих случаев, чтобы нельзя было перебором выяснить, какие email зарегистрированы.
+
+**Пример запроса**
+
+```bash
+curl -X POST http://localhost:5050/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "supersecurepassword"
+  }'
+```
+
+-----
+
+### `POST /api/v1/auth/refresh`
+
+Меняет валидный refresh-токен на новую пару access + refresh. Использованный refresh-токен сразу отзывается (ротация) — повторно предъявить его нельзя, даже если он был перехвачен.
+
+**Request body**
+
+```json
+{
+  "refresh_token": "9f1c2b7a3e5d..."
+}
+```
+
+**Response `200 OK`** — такой же формат, как у `/auth/login`.
+
+Невалидный, истёкший, уже отозванный или уже использованный refresh-токен — `401 Unauthorized`.
+
+**Пример запроса**
+
+```bash
+curl -X POST http://localhost:5050/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token": "9f1c2b7a3e5d..."}'
+```
+
+-----
+
+### `POST /api/v1/auth/logout`
+
+Отзывает refresh-токен: им больше нельзя получить новый access-токен. Access-токен, уже выданный клиенту, продолжит работать до истечения своего TTL — это осознанный компромисс stateless access-токенов, полноценного server-side kill switch для них нет.
+
+**Request body**
+
+```json
+{
+  "refresh_token": "9f1c2b7a3e5d..."
+}
+```
+
+**Response `204 No Content`**
+
+Если токен уже не существует/уже отозван — тоже `204`, logout идемпотентен.
+
+**Пример запроса**
+
+```bash
+curl -X POST http://localhost:5050/api/v1/auth/logout \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token": "9f1c2b7a3e5d..."}'
 ```
 
 -----
@@ -271,6 +346,19 @@ curl -X POST http://localhost:5050/api/v1/auth/register \
 |`created_at`   |`TIMESTAMPTZ` |                                           |
 |`updated_at`   |`TIMESTAMPTZ` |`CHECK(created_at <= updated_at)`          |
 
+Таблица `refresh_tokens` (миграция `000002_refresh_tokens`):
+
+|Колонка      |Тип           |Ограничения                                        |
+|-------------|--------------|----------------------------------------------------|
+|`id`         |`UUID`        |`PRIMARY KEY`, `DEFAULT uuid_generate_v4()`          |
+|`user_id`    |`UUID`        |`NOT NULL`, `REFERENCES users(id) ON DELETE CASCADE` |
+|`token_hash` |`VARCHAR(64)` |`UNIQUE NOT NULL` (SHA-256 hex от refresh-токена)    |
+|`expires_at` |`TIMESTAMPTZ` |`NOT NULL`                                           |
+|`revoked_at` |`TIMESTAMPTZ` |nullable — `NULL`, пока токен активен                |
+|`created_at` |`TIMESTAMPTZ` |`NOT NULL DEFAULT now()`                             |
+
+Индекс `idx_refresh_tokens_user_id` — по `user_id`, на будущее для операций вида «отозвать все сессии пользователя».
+
 -----
 
 ## Логирование
@@ -285,7 +373,9 @@ curl -X POST http://localhost:5050/api/v1/auth/register \
 
 **Модуль пользователей**
 
-- [ ] `GET /api/v1/users/me` и обновление профиля
+- [ ] `GET /api/v1/users/me` информация о профиле
+- [ ] `PATCH /api/v1/users/me` обновление профиля 
+- [ ] `DELETE /api/v1/users/me` удаление профиля
 - [ ] Роли и права доступа
 
 **Модуль домохозяйств**
