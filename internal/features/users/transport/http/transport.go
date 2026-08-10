@@ -13,6 +13,7 @@ import (
 
 type UsersHTTPHandler struct {
 	usersService UsersService
+	tokenManager *core_jwt.TokenManager
 }
 
 type UsersService interface {
@@ -22,22 +23,27 @@ type UsersService interface {
 	) (core_domain.User, error)
 }
 
-func (h *UsersHTTPHandler) NewUsersHTTPHandler(usersService UsersService) *UsersHTTPHandler {
+func (h *UsersHTTPHandler) NewUsersHTTPHandler(
+	usersService UsersService,
+	tokenManager *core_jwt.TokenManager,
+) *UsersHTTPHandler {
 	return &UsersHTTPHandler{
 		usersService: usersService,
+		tokenManager: tokenManager,
 	}
 }
 
-func (h *UsersHTTPHandler) Routes(tokenManager *core_jwt.TokenManager) []core_transport_http_server.Route {
-	var middlewares []core_transport_http_middleware.Middleware
-	middlewares = append(middlewares, core_transport_http_middleware.Authenticate(tokenManager))
+func (h *UsersHTTPHandler) Routes() []core_transport_http_server.Route {
+	authenticate := core_transport_http_middleware.Authenticate(h.tokenManager)
 
 	return []core_transport_http_server.Route{
 		{
-			Method:     http.MethodGet,
-			Path:       "/users/me",
-			Handler:    h.GetMe,
-			Middleware: middlewares,
+			Method:  http.MethodGet,
+			Path:    "/users/me",
+			Handler: h.GetMe,
+			Middleware: []core_transport_http_middleware.Middleware{
+				authenticate,
+			},
 		},
 	}
 }
