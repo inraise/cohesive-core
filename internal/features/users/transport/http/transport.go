@@ -23,7 +23,7 @@ type UsersService interface {
 	) (core_domain.User, error)
 }
 
-func (h *UsersHTTPHandler) NewUsersHTTPHandler(
+func NewUsersHTTPHandler(
 	usersService UsersService,
 	tokenManager *core_jwt.TokenManager,
 ) *UsersHTTPHandler {
