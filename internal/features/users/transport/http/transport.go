@@ -21,6 +21,12 @@ type UsersService interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) (core_domain.User, error)
+
+	PatchUser(
+		ctx context.Context,
+		id uuid.UUID,
+		user core_domain.UserPatch,
+	) (core_domain.User, error)
 }
 
 func NewUsersHTTPHandler(

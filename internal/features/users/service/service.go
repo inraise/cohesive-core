@@ -16,6 +16,12 @@ type UsersRepository interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) (core_domain.User, error)
+
+	PatchMe(
+		ctx context.Context,
+		id uuid.UUID,
+		user core_domain.User,
+	) (core_domain.User, error)
 }
 
 func NewUsersService(
