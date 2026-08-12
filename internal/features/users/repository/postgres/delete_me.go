@@ -25,7 +25,7 @@ func (r *UsersRepository) DeleteMe(
 	}
 
 	if cmdTag.RowsAffected() == 0 {
-		return fmt.Errorf("user with id='%d': %w", id, core_errors.ErrNotFound)
+		return fmt.Errorf("user with id='%s': %w", id, core_errors.ErrNotFound)
 	}
 
 	return nil
