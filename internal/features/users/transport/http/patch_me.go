@@ -104,7 +104,7 @@ func (h *UsersHTTPHandler) PatchMe(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	userPatch := userPatchFromRequest(request)
-	userDomain, err := h.usersService.PatchUser(ctx, userID, userPatch)
+	userDomain, err := h.usersService.PatchMe(ctx, userID, userPatch)
 	if err != nil {
 		responseHandler.ErrorResponse(
 			err,
