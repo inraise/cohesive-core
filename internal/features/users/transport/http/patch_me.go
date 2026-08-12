@@ -13,7 +13,7 @@ import (
 
 type PatchUserRequest struct {
 	Email        core_http_types.Nullable[string] `json:"email"`
-	PasswordHash core_http_types.Nullable[string] `json:"password_hash"`
+	Password core_http_types.Nullable[string] `json:"password"`
 
 	FirstName core_http_types.Nullable[string] `json:"first_name"`
 	LastName  core_http_types.Nullable[string] `json:"last_name"`
@@ -33,9 +33,15 @@ func (r *PatchUserRequest) Validate() error {
 		}
 	}
 
-	if r.PasswordHash.Set {
-		if r.PasswordHash.Value == nil {
+	if r.Password.Set {
+		if r.Password.Value == nil {
 			return fmt.Errorf("`Password` can't be NULL")
+		}
+
+		passwordLen := len([]rune(*r.Password.Value))
+
+		if passwordLen < 10 || passwordLen > 100 {
+			return fmt.Errorf("`Password` must be between 10 and 100 symbols")
 		}
 	}
 
@@ -117,7 +123,7 @@ func (h *UsersHTTPHandler) PatchMe(rw http.ResponseWriter, r *http.Request) {
 func userPatchFromRequest(request PatchUserRequest) core_domain.UserPatch {
 	return core_domain.NewUserPatch(
 		request.Email.ToDomain(),
-		request.PasswordHash.ToDomain(),
+		request.Password.ToDomain(),
 		request.FirstName.ToDomain(),
 		request.LastName.ToDomain(),
 		request.Age.ToDomain(),

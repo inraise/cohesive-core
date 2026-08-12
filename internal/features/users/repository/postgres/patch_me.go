@@ -24,12 +24,13 @@ func (r *UsersRepository) PatchMe(
 	UPDATE users
 	SET 
 		email=$1,
-		first_name=$2,
-		last_name=$3,
-		age=$4,
-		updated_at=$5,
+		password_hash=$2,
+		first_name=$3,
+		last_name=$4,
+		age=$5,
+		updated_at=$6,
 		version=version+1
-	WHERE id=$6 AND version=$7
+	WHERE id=$7 AND version=$8
 	RETURNING
 		id,
 		version,
@@ -45,6 +46,7 @@ func (r *UsersRepository) PatchMe(
 		ctx,
 		query,
 		user.Email,
+		user.PasswordHash,
 		user.FirstName,
 		user.LastName,
 		user.Age,
@@ -69,7 +71,7 @@ func (r *UsersRepository) PatchMe(
 	if err != nil {
 		if errors.Is(err, core_pool.ErrNoRows) {
 			return core_domain.User{}, fmt.Errorf(
-				"user with id='%d' concurrently accessed: %w",
+				"user with id='%s' concurrently accessed: %w",
 				id,
 				core_errors.ErrConflict,
 			)

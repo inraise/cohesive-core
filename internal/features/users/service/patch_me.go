@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *UsersService) PatchMe(
@@ -13,6 +14,16 @@ func (s *UsersService) PatchMe(
 	id uuid.UUID,
 	patch core_domain.UserPatch,
 ) (core_domain.User, error) {
+	if patch.Password.Set && patch.Password.Value != nil {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*patch.Password.Value), bcrypt.DefaultCost)
+		if err != nil {
+			return core_domain.User{}, fmt.Errorf("hash new password: %w", err)
+		}
+
+		hashed := string(hashedPassword)
+		patch.Password.Value = &hashed
+	}
+
 	user, err := s.usersRepository.GetUserByID(ctx, id)
 	if err != nil {
 		return core_domain.User{}, fmt.Errorf("get user from repository: %w", err)
