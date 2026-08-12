@@ -97,3 +97,80 @@ func (u *User) Validate() error {
 
 	return nil
 }
+
+type UserPatch struct {
+	Email    Nullable[string]
+	Password Nullable[string]
+
+	FirstName Nullable[string]
+	LastName  Nullable[string]
+	Age       Nullable[int]
+}
+
+func NewUserPatch(
+	email Nullable[string],
+	password Nullable[string],
+	firstName Nullable[string],
+	lastName Nullable[string],
+	age Nullable[int],
+) UserPatch {
+	return UserPatch{
+		Email:     email,
+		Password:  password,
+		FirstName: firstName,
+		LastName:  lastName,
+		Age:       age,
+	}
+}
+
+func (p *UserPatch) Validate() error {
+	if p.Email.Set && p.Email.Value == nil {
+		return fmt.Errorf("`Email` can't be patched to NULL: %w", core_errors.ErrInvalidArgument)
+	}
+
+	if p.Password.Set && p.Password.Value == nil {
+		return fmt.Errorf("`Password` can't be patched to NULL: %w", core_errors.ErrInvalidArgument)
+	}
+
+	if p.FirstName.Set && p.FirstName.Value == nil {
+		return fmt.Errorf("`FirstName` can't be patched to NULL: %w", core_errors.ErrInvalidArgument)
+	}
+
+	return nil
+}
+
+func (u *User) ApplyPatch(patch UserPatch) error {
+	if err := patch.Validate(); err != nil {
+		return fmt.Errorf("validate user patch: %w", err)
+	}
+
+	tmp := *u
+
+	if patch.Email.Set {
+		tmp.Email = *patch.Email.Value
+	}
+
+	if patch.Password.Set {
+		tmp.PasswordHash = *patch.Password.Value
+	}
+
+	if patch.FirstName.Set {
+		tmp.FirstName = *patch.FirstName.Value
+	}
+
+	if patch.LastName.Set {
+		tmp.LastName = patch.LastName.Value
+	}
+
+	if patch.Age.Set {
+		tmp.Age = patch.Age.Value
+	}
+
+	if err := tmp.Validate(); err != nil {
+		return fmt.Errorf("validate patched user: %w", err)
+	}
+
+	*u = tmp
+
+	return nil
+}
