@@ -52,24 +52,20 @@ func (r *PatchUserRequest) Validate() error {
 	}
 
 	if r.LastName.Set {
-		if r.LastName.Value == nil {
-			return fmt.Errorf("`LastName` can't be NULL")
-		}
+		if r.LastName.Value != nil {
+			lastNameLen := len([]rune(*r.LastName.Value))
 
-		lastNameLen := len([]rune(*r.LastName.Value))
-
-		if lastNameLen < 1 || lastNameLen > 100 {
-			return fmt.Errorf("`LastName` must be between 1 and 100 symbols")
+			if lastNameLen < 1 || lastNameLen > 100 {
+				return fmt.Errorf("`LastName` must be between 1 and 100 symbols")
+			}
 		}
 	}
 
 	if r.Age.Set {
-		if r.Age.Value == nil {
-			return fmt.Errorf("`Age` can't be NULL")
-		}
-
-		if *r.Age.Value < 0 || *r.Age.Value > 130 {
-			return fmt.Errorf("`Age` must be between 0 and 130 symbols")
+		if r.Age.Value != nil {
+			if *r.Age.Value < 0 || *r.Age.Value > 130 {
+				return fmt.Errorf("`Age` must be between 0 and 130 symbols")
+			}
 		}
 	}
 

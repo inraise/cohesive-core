@@ -136,14 +136,6 @@ func (p *UserPatch) Validate() error {
 		return fmt.Errorf("`FirstName` can't be patched to NULL: %w", core_errors.ErrInvalidArgument)
 	}
 
-	if p.LastName.Set && p.LastName.Value == nil {
-		return fmt.Errorf("`LastName` can't be patched to NULL: %w", core_errors.ErrInvalidArgument)
-	}
-
-	if p.Age.Set && p.Age.Value == nil {
-		return fmt.Errorf("`Age` can't be patched to NULL: %w", core_errors.ErrInvalidArgument)
-	}
-
 	return nil
 }
 
