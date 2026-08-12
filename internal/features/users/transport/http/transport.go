@@ -27,6 +27,11 @@ type UsersService interface {
 		id uuid.UUID,
 		user core_domain.UserPatch,
 	) (core_domain.User, error)
+
+	DeleteMe(
+		ctx context.Context,
+		id uuid.UUID,
+	) error
 }
 
 func NewUsersHTTPHandler(
@@ -55,6 +60,14 @@ func (h *UsersHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:  http.MethodPatch,
 			Path:    "/users/me",
 			Handler: h.PatchMe,
+			Middleware: []core_transport_http_middleware.Middleware{
+				authenticate,
+			},
+		},
+		{
+			Method:  http.MethodDelete,
+			Path:    "/users/me",
+			Handler: h.DeleteMe,
 			Middleware: []core_transport_http_middleware.Middleware{
 				authenticate,
 			},

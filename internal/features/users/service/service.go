@@ -22,6 +22,11 @@ type UsersRepository interface {
 		id uuid.UUID,
 		user core_domain.User,
 	) (core_domain.User, error)
+
+	DeleteMe(
+		ctx context.Context,
+		id uuid.UUID,
+	) error
 }
 
 func NewUsersService(
