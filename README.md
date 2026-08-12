@@ -40,10 +40,15 @@ cohesive-core/
 │   │   └── transport/http/      # HTTP-сервер: роутер, middleware (в т.ч. Auth), request/response
 │   │
 │   └── features/
-│       └── auth/                # Регистрация, логин, refresh и logout
-│           ├── repository/postgres/  # SQL-запросы (users, refresh_tokens)
-│           ├── service/              # Бизнес-логика (хеширование пароля, JWT, ротация refresh-токенов)
-│           └── transport/http/       # HTTP-хендлеры и DTO
+│       ├── auth/                # Регистрация, логин, refresh и logout
+│       │   ├── repository/postgres/  # SQL-запросы (users, refresh_tokens)
+│       │   ├── service/              # Бизнес-логика (хеширование пароля, JWT, ротация refresh-токенов)
+│       │   └── transport/http/       # HTTP-хендлеры и DTO
+│       │
+│       └── users/                # Профиль текущего пользователя (/users/me)
+│           ├── repository/postgres/  # SQL-запросы (users)
+│           ├── service/              # GetMe / PatchMe (partial update + оптимистичная блокировка) / DeleteMe
+│           └── transport/http/       # HTTP-хендлеры и DTO, все роуты под Authenticate middleware
 │
 ├── migrations/                 # SQL-миграции (golang-migrate)
 ├── docker-compose.yaml         # cohesive, cohesive-postgres, migrate, port-forwarder
@@ -58,6 +63,9 @@ cohesive-core/
 - **Фичи не знают друг о друге.** `auth` работает только через собственный интерфейс `AuthService` и общий `core_domain.User` — добавление новой фичи (например, `households`) не требует правок в существующих.
 - **Явные ошибки домена.** `core/errors` определяет базовый набор ошибок (`ErrNotFound`, `ErrInvalidArgument`, `ErrConflict`, `ErrUnauthorized`), которые оборачиваются на каждом слое и мапятся в HTTP-статусы в `response`-пакете.
 - **Stateless access + отзываемый refresh.** Access-токен — обычный подписанный JWT (`core/jwt`), сервер его не хранит и не может отозвать раньше `exp` (15 минут). Refresh-токен — непрозрачная случайная строка, её SHA-256 хеш живёт в таблице `refresh_tokens`; именно это позволяет по-настоящему отзывать сессии на `/auth/logout` и делать ротацию на `/auth/refresh`.
+- **Точечная авторизация через middleware.** `Authenticate` (`core/transport/http/middleware/auth.go`) вешается на конкретные роуты через `Route.Middleware`, а не глобально на сервер — так публичные `/auth/*`-эндпоинты остаются без токена, а все `/users/me` его требуют. Хендлер достаёт `user_id` из контекста (`UserIDFromContext`), а не из тела/query запроса — иначе можно было бы подставить чужой id, имея свой валидный токен.
+- **Partial update через `Nullable[T]`.** `PATCH /users/me` отличает «поле не прислали» от «поле прислали как `null`» с помощью generic-обёртки `Nullable[T]` с кастомным `UnmarshalJSON` (`core/transport/http/types`) — JSON-декодер вызывает `UnmarshalJSON` только для ключей, которые реально есть в теле запроса. Домен (`core_domain.UserPatch.ApplyPatch`) применяет только `Set == true` поля и валидирует результат целиком, не зная деталей HTTP-слоя.
+- **Оптимистичная блокировка через `Version`.** `PatchMe` в репозитории обновляет строку через `WHERE id = $1 AND version = $2` и одновременно увеличивает `version`; если конкурентный запрос успел изменить профиль между чтением и записью — `UPDATE` не находит строку, и это мапится в `409 Conflict`.
 
 -----
 
@@ -330,6 +338,92 @@ curl -X POST http://localhost:5050/api/v1/auth/logout \
 
 -----
 
+### `GET /api/v1/users/me`
+
+Профиль текущего пользователя. Требует заголовок `Authorization: Bearer <access_token>` — обрабатывается `Authenticate` middleware до хендлера.
+
+**Response `200 OK`**
+
+```json
+{
+  "id": "e5c1f2b0-...-uuid",
+  "version": 1,
+  "email": "user@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "age": 28,
+  "created_at": "2026-08-04T05:00:00Z",
+  "updated_at": "2026-08-04T05:00:00Z"
+}
+```
+
+`password_hash` в ответе никогда не присутствует — DTO собирается вручную, без него.
+
+Нет/просрочен/невалиден токен — `401 Unauthorized`, до хендлера дело не доходит.
+
+**Пример запроса**
+
+```bash
+curl http://localhost:5050/api/v1/users/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+```
+
+-----
+
+### `PATCH /api/v1/users/me`
+
+Частичное обновление профиля. Меняются только присланные поля — отсутствие ключа в JSON и присланное значение `null` различаются (см. `Nullable[T]` в архитектурных решениях выше). Пароль передаётся как обычный текст (сервер сам его хеширует), а не как хеш.
+
+**Request body** (любое подмножество полей)
+
+```json
+{
+  "email": "new-email@example.com",
+  "password": "newsupersecurepassword",
+  "first_name": "Jane",
+  "last_name": null,
+  "age": 29
+}
+```
+
+|Поле        |Тип   |Валидация при указании                      |
+|------------|------|---------------------------------------------|
+|`email`     |string|5–100 символов                                |
+|`password`  |string|10–100 символов; хешируется bcrypt перед сохранением, `password_hash` клиенту не возвращается|
+|`first_name`|string|1–100 символов, нельзя явно выставить `null`  |
+|`last_name` |string|1–100 символов, можно явно выставить `null`   |
+|`age`       |int   |0–130, можно явно выставить `null`             |
+
+**Response `200 OK`** — обновлённый профиль, формат как у `GET /users/me`.
+
+Конфликт версии (профиль успели изменить между чтением и записью, например из другой сессии) — `409 Conflict`. Некорректные значения — `400 Bad Request`.
+
+**Пример запроса**
+
+```bash
+curl -X PATCH http://localhost:5050/api/v1/users/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{"first_name": "Jane"}'
+```
+
+-----
+
+### `DELETE /api/v1/users/me`
+
+Безвозвратное удаление аккаунта (жёсткое, без soft-delete). Каскадом удаляются и все `refresh_tokens` пользователя (`ON DELETE CASCADE`).
+
+**Response `204 No Content`**
+
+**Пример запроса**
+
+```bash
+curl -X DELETE http://localhost:5050/api/v1/users/me \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+```
+
+-----
+
 ## Схема базы данных
 
 Таблица `users` (миграция `000001_init_schema`):
@@ -373,14 +467,11 @@ curl -X POST http://localhost:5050/api/v1/auth/logout \
 
 **Модуль пользователей**
 
-- [ ] `GET /api/v1/users/me` информация о профиле
-- [ ] `PATCH /api/v1/users/me` обновление профиля 
-- [ ] `DELETE /api/v1/users/me` удаление профиля
 - [ ] Роли и права доступа
 
-**Модуль домохозяйств**
+**Модуль семьи**
 
-- [ ] Создание и редактирование домохозяйств
+- [ ] Создание и редактирование семьи
 - [ ] Приглашение участников по ссылке/коду
 - [ ] Разграничение прав внутри группы
 

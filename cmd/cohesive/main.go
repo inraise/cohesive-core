@@ -10,6 +10,9 @@ import (
 	auth_repository_postgres "cohesive-core/internal/features/auth/repository/postgres"
 	auth_service "cohesive-core/internal/features/auth/service"
 	auth_transport_http "cohesive-core/internal/features/auth/transport/http"
+	users_repository_postgres "cohesive-core/internal/features/users/repository/postgres"
+	users_service "cohesive-core/internal/features/users/service"
+	users_transport_http "cohesive-core/internal/features/users/transport/http"
 	"context"
 	"fmt"
 	"os"
@@ -55,10 +58,15 @@ func main() {
 		logger.Fatal("failed to init JWT token manager", zap.Error(err))
 	}
 
-	logger.Debug("initializing feature", zap.String("feature", "users"))
+	logger.Debug("initializing feature", zap.String("feature", "auth"))
 	authRepository := auth_repository_postgres.NewAuthRepository(pool)
 	authService := auth_service.NewAuthService(authRepository, tokenManager, jwtConfig.RefreshTTL)
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
+
+	logger.Debug("initializing feature", zap.String("feature", "users"))
+	usersRepository := users_repository_postgres.NewUsersRepository(pool)
+	usersService := users_service.NewUsersService(usersRepository)
+	usersTransportHTTP := users_transport_http.NewUsersHTTPHandler(usersService, tokenManager)
 
 	logger.Debug("initializing HTTP server")
 
@@ -78,6 +86,7 @@ func main() {
 	)
 
 	apiVersionRouterV1.RegisterRoutes(authTransportHTTP.Routes()...)
+	apiVersionRouterV1.RegisterRoutes(usersTransportHTTP.Routes()...)
 	httpServer.RegisterAPIRoutes(apiVersionRouterV1)
 
 	if err := httpServer.Run(ctx); err != nil {
