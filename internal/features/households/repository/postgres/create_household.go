@@ -24,7 +24,7 @@ func (r *HouseholdsRepository) CreateHousehold(
 		),
 		new_member AS (
 			INSERT INTO household_members (household_id, user_id, role)
-			SELECT id, $5, 'owner' FROM new_household
+			SELECT id, $5, $6 FROM new_household
 		)
 		SELECT id, version, name, created_at, updated_at FROM new_household;
 	`
@@ -35,6 +35,7 @@ func (r *HouseholdsRepository) CreateHousehold(
 		household.CreatedAt,
 		household.UpdatedAt,
 		ownerID,
+		core_domain.HouseholdRoleOwner,
 	)
 
 	var householdModel HouseholdModel
