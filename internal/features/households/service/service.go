@@ -17,6 +17,11 @@ type HouseholdsRepository interface {
 		household core_domain.Household,
 		ownerID uuid.UUID,
 	) (core_domain.Household, error)
+
+	ListHouseholdsByUserID(
+		ctx context.Context,
+		userID uuid.UUID,
+	) ([]core_domain.HouseholdWithRole, error)
 }
 
 func NewHouseholdsService(
