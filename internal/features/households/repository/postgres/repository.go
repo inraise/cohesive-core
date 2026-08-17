@@ -2,14 +2,14 @@ package households_repository_postgres
 
 import core_pool "cohesive-core/internal/core/repository/postgres/pool"
 
-type HouseHoldsRepository struct {
+type HouseholdsRepository struct {
 	pool core_pool.Pool
 }
 
-func NewHouseHoldsRepository(
+func NewHouseholdsRepository(
 	pool core_pool.Pool,
-) *HouseHoldsRepository {
-	return &HouseHoldsRepository{
+) *HouseholdsRepository {
+	return &HouseholdsRepository{
 		pool: pool,
 	}
 }
