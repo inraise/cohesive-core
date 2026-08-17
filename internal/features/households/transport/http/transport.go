@@ -23,6 +23,11 @@ type HouseholdsService interface {
 		ownerID uuid.UUID,
 		request households_service.CreateHouseholdRequest,
 	) (core_domain.Household, error)
+
+	ListMyHouseholds(
+		ctx context.Context,
+		userID uuid.UUID,
+	) ([]core_domain.HouseholdWithRole, error)
 }
 
 func NewHouseholdsHTTPHandler(
@@ -43,6 +48,14 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:  http.MethodPost,
 			Path:    "/households",
 			Handler: h.CreateHousehold,
+			Middleware: []core_transport_http_middleware.Middleware{
+				authenticate,
+			},
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/households",
+			Handler: h.ListHouseholds,
 			Middleware: []core_transport_http_middleware.Middleware{
 				authenticate,
 			},

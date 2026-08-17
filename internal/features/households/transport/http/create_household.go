@@ -1,6 +1,7 @@
 package households_transport_http
 
 import (
+	core_domain "cohesive-core/internal/core/domain"
 	core_logger "cohesive-core/internal/core/logger"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_request "cohesive-core/internal/core/transport/http/request"
@@ -43,6 +44,6 @@ func (h *HouseholdsHTTPHandler) CreateHousehold(rw http.ResponseWriter, r *http.
 		return
 	}
 
-	response := CreateHouseholdResponse(householdDTOFromDomain(householdDomain))
+	response := CreateHouseholdResponse(householdDTOFromDomain(householdDomain, core_domain.HouseholdRoleOwner))
 	responseHandler.JSONResponse(response, http.StatusCreated)
 }
