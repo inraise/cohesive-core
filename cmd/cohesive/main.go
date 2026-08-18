@@ -10,6 +10,9 @@ import (
 	auth_repository_postgres "cohesive-core/internal/features/auth/repository/postgres"
 	auth_service "cohesive-core/internal/features/auth/service"
 	auth_transport_http "cohesive-core/internal/features/auth/transport/http"
+	households_repository_postgres "cohesive-core/internal/features/households/repository/postgres"
+	households_service "cohesive-core/internal/features/households/service"
+	households_transport_http "cohesive-core/internal/features/households/transport/http"
 	users_repository_postgres "cohesive-core/internal/features/users/repository/postgres"
 	users_service "cohesive-core/internal/features/users/service"
 	users_transport_http "cohesive-core/internal/features/users/transport/http"
@@ -68,6 +71,11 @@ func main() {
 	usersService := users_service.NewUsersService(usersRepository)
 	usersTransportHTTP := users_transport_http.NewUsersHTTPHandler(usersService, tokenManager)
 
+	logger.Debug("initializing feature", zap.String("feature", "households"))
+	householdsRepository := households_repository_postgres.NewHouseholdsRepository(pool)
+	householdsService := households_service.NewHouseholdsService(householdsRepository)
+	householdsTransportHTTP := households_transport_http.NewHouseholdsHTTPHandler(householdsService, tokenManager)
+
 	logger.Debug("initializing HTTP server")
 
 	httpConfig := core_transport_http_server.NewConfigMust()
@@ -87,6 +95,7 @@ func main() {
 
 	apiVersionRouterV1.RegisterRoutes(authTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(usersTransportHTTP.Routes()...)
+	apiVersionRouterV1.RegisterRoutes(householdsTransportHTTP.Routes()...)
 	httpServer.RegisterAPIRoutes(apiVersionRouterV1)
 
 	if err := httpServer.Run(ctx); err != nil {
