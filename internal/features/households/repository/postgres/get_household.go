@@ -11,10 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// GetHouseholdByIDForUser отдаёт дом только если userID реально состоит
-// в нём. Если дома не существует ИЛИ пользователь не его участник - в обоих
-// случаях возвращается один и тот же ErrNotFound, чтобы нельзя было
-// перебором id узнать о существовании чужих домов.
 func (r *HouseholdsRepository) GetHouseholdByIDForUser(
 	ctx context.Context,
 	householdID uuid.UUID,

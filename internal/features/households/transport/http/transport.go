@@ -34,6 +34,13 @@ type HouseholdsService interface {
 		householdID uuid.UUID,
 		userID uuid.UUID,
 	) (core_domain.HouseholdWithRole, error)
+
+	RenameHousehold(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+		request households_service.RenameHouseholdRequest,
+	) (core_domain.HouseholdWithRole, error)
 }
 
 func NewHouseholdsHTTPHandler(
@@ -48,6 +55,7 @@ func NewHouseholdsHTTPHandler(
 
 func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 	authenticate := core_transport_http_middleware.Authenticate(h.tokenManager)
+	withAuth := []core_transport_http_middleware.Middleware{authenticate}
 
 	return []core_transport_http_server.Route{
 		{
@@ -73,6 +81,12 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Middleware: []core_transport_http_middleware.Middleware{
 				authenticate,
 			},
+		},
+		{
+			Method:     http.MethodPatch,
+			Path:       "/households/{id}",
+			Handler:    h.RenameHousehold,
+			Middleware: withAuth,
 		},
 	}
 }
