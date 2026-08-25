@@ -22,6 +22,24 @@ type HouseholdsRepository interface {
 		ctx context.Context,
 		userID uuid.UUID,
 	) ([]core_domain.HouseholdWithRole, error)
+
+	GetHouseholdByIDForUser(
+		ctx context.Context,
+		householdID uuid.UUID,
+		userID uuid.UUID,
+	) (core_domain.HouseholdWithRole, error)
+
+	RenameHousehold(
+		ctx context.Context,
+		householdID uuid.UUID,
+		name string,
+		version int,
+	) (core_domain.Household, error)
+
+	DeleteHousehold(
+		ctx context.Context,
+		householdID uuid.UUID,
+	) error
 }
 
 func NewHouseholdsService(

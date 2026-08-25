@@ -28,6 +28,25 @@ type HouseholdsService interface {
 		ctx context.Context,
 		userID uuid.UUID,
 	) ([]core_domain.HouseholdWithRole, error)
+
+	GetHousehold(
+		ctx context.Context,
+		householdID uuid.UUID,
+		userID uuid.UUID,
+	) (core_domain.HouseholdWithRole, error)
+
+	RenameHousehold(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+		request households_service.RenameHouseholdRequest,
+	) (core_domain.HouseholdWithRole, error)
+
+	DeleteHousehold(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+	) error
 }
 
 func NewHouseholdsHTTPHandler(
@@ -42,6 +61,7 @@ func NewHouseholdsHTTPHandler(
 
 func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 	authenticate := core_transport_http_middleware.Authenticate(h.tokenManager)
+	withAuth := []core_transport_http_middleware.Middleware{authenticate}
 
 	return []core_transport_http_server.Route{
 		{
@@ -59,6 +79,26 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Middleware: []core_transport_http_middleware.Middleware{
 				authenticate,
 			},
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/households/{id}",
+			Handler: h.GetHousehold,
+			Middleware: []core_transport_http_middleware.Middleware{
+				authenticate,
+			},
+		},
+		{
+			Method:     http.MethodPatch,
+			Path:       "/households/{id}",
+			Handler:    h.RenameHousehold,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodDelete,
+			Path:       "/households/{id}",
+			Handler:    h.DeleteHousehold,
+			Middleware: withAuth,
 		},
 	}
 }
