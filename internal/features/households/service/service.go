@@ -35,6 +35,11 @@ type HouseholdsRepository interface {
 		name string,
 		version int,
 	) (core_domain.Household, error)
+
+	DeleteHousehold(
+		ctx context.Context,
+		householdID uuid.UUID,
+	) error
 }
 
 func NewHouseholdsService(
