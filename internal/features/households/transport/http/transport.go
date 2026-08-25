@@ -41,6 +41,12 @@ type HouseholdsService interface {
 		callerID uuid.UUID,
 		request households_service.RenameHouseholdRequest,
 	) (core_domain.HouseholdWithRole, error)
+
+	DeleteHousehold(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+	) error
 }
 
 func NewHouseholdsHTTPHandler(
@@ -86,6 +92,12 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:     http.MethodPatch,
 			Path:       "/households/{id}",
 			Handler:    h.RenameHousehold,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodDelete,
+			Path:       "/households/{id}",
+			Handler:    h.DeleteHousehold,
 			Middleware: withAuth,
 		},
 	}
