@@ -40,6 +40,11 @@ type HouseholdsRepository interface {
 		ctx context.Context,
 		householdID uuid.UUID,
 	) error
+
+	ListMembers(
+		ctx context.Context,
+		householdID uuid.UUID,
+	) ([]core_domain.HouseholdMember, error)
 }
 
 func NewHouseholdsService(
