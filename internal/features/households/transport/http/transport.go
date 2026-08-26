@@ -47,6 +47,12 @@ type HouseholdsService interface {
 		householdID uuid.UUID,
 		callerID uuid.UUID,
 	) error
+
+	ListMembers(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+	) ([]core_domain.HouseholdMember, error)
 }
 
 func NewHouseholdsHTTPHandler(
@@ -98,6 +104,12 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:     http.MethodDelete,
 			Path:       "/households/{id}",
 			Handler:    h.DeleteHousehold,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodGet,
+			Path:       "/households/{id}/members",
+			Handler:    h.ListMembers,
 			Middleware: withAuth,
 		},
 	}
