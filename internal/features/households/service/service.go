@@ -45,6 +45,18 @@ type HouseholdsRepository interface {
 		ctx context.Context,
 		householdID uuid.UUID,
 	) ([]core_domain.HouseholdMember, error)
+
+	GetMemberRole(
+		ctx context.Context,
+		householdID uuid.UUID,
+		userID uuid.UUID,
+	) (core_domain.HouseholdRole, error)
+
+	RemoveMember(
+		ctx context.Context,
+		householdID uuid.UUID,
+		userID uuid.UUID,
+	) error
 }
 
 func NewHouseholdsService(
