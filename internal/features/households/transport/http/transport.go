@@ -60,6 +60,14 @@ type HouseholdsService interface {
 		callerID uuid.UUID,
 		targetID uuid.UUID,
 	) error
+
+	ChangeMemberRole(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+		targetID uuid.UUID,
+		request households_service.ChangeMemberRoleRequest,
+	) error
 }
 
 func NewHouseholdsHTTPHandler(
@@ -123,6 +131,12 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:     http.MethodDelete,
 			Path:       "/households/{id}/members/{user_id}",
 			Handler:    h.RemoveMember,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodPatch,
+			Path:       "/households/{id}/members/{user_id}",
+			Handler:    h.ChangeMemberRole,
 			Middleware: withAuth,
 		},
 	}
