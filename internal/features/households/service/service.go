@@ -57,6 +57,20 @@ type HouseholdsRepository interface {
 		householdID uuid.UUID,
 		userID uuid.UUID,
 	) error
+
+	SetMemberRole(
+		ctx context.Context,
+		householdID uuid.UUID,
+		userID uuid.UUID,
+		role string,
+	) error
+
+	TransferOwnership(
+		ctx context.Context,
+		householdID uuid.UUID,
+		currentOwnerID uuid.UUID,
+		newOwnerID uuid.UUID,
+	) error
 }
 
 func NewHouseholdsService(
