@@ -71,6 +71,11 @@ type HouseholdsRepository interface {
 		currentOwnerID uuid.UUID,
 		newOwnerID uuid.UUID,
 	) error
+
+	CreateInvite(
+		ctx context.Context,
+		invite core_domain.HouseholdInvite,
+	) (core_domain.HouseholdInvite, error)
 }
 
 func NewHouseholdsService(
