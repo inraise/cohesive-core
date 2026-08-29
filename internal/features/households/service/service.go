@@ -40,6 +40,47 @@ type HouseholdsRepository interface {
 		ctx context.Context,
 		householdID uuid.UUID,
 	) error
+
+	ListMembers(
+		ctx context.Context,
+		householdID uuid.UUID,
+	) ([]core_domain.HouseholdMember, error)
+
+	GetMemberRole(
+		ctx context.Context,
+		householdID uuid.UUID,
+		userID uuid.UUID,
+	) (core_domain.HouseholdRole, error)
+
+	RemoveMember(
+		ctx context.Context,
+		householdID uuid.UUID,
+		userID uuid.UUID,
+	) error
+
+	SetMemberRole(
+		ctx context.Context,
+		householdID uuid.UUID,
+		userID uuid.UUID,
+		role string,
+	) error
+
+	TransferOwnership(
+		ctx context.Context,
+		householdID uuid.UUID,
+		currentOwnerID uuid.UUID,
+		newOwnerID uuid.UUID,
+	) error
+
+	CreateInvite(
+		ctx context.Context,
+		invite core_domain.HouseholdInvite,
+	) (core_domain.HouseholdInvite, error)
+
+	ListInvites(
+		ctx context.Context,
+		householdID uuid.UUID,
+	) ([]core_domain.HouseholdInvite, error)
 }
 
 func NewHouseholdsService(

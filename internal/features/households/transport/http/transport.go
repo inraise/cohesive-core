@@ -47,6 +47,40 @@ type HouseholdsService interface {
 		householdID uuid.UUID,
 		callerID uuid.UUID,
 	) error
+
+	ListMembers(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+	) ([]core_domain.HouseholdMember, error)
+
+	RemoveMember(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+		targetID uuid.UUID,
+	) error
+
+	ChangeMemberRole(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+		targetID uuid.UUID,
+		request households_service.ChangeMemberRoleRequest,
+	) error
+
+	CreateInvite(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+		request households_service.CreateInviteRequest,
+	) (core_domain.HouseholdInvite, error)
+
+	ListInvites(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+	) ([]core_domain.HouseholdInvite, error)
 }
 
 func NewHouseholdsHTTPHandler(
@@ -98,6 +132,36 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:     http.MethodDelete,
 			Path:       "/households/{id}",
 			Handler:    h.DeleteHousehold,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodGet,
+			Path:       "/households/{id}/members",
+			Handler:    h.ListMembers,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodDelete,
+			Path:       "/households/{id}/members/{user_id}",
+			Handler:    h.RemoveMember,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodPatch,
+			Path:       "/households/{id}/members/{user_id}",
+			Handler:    h.ChangeMemberRole,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodPost,
+			Path:       "/households/{id}/invites",
+			Handler:    h.CreateInvite,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodGet,
+			Path:       "/households/{id}/invites",
+			Handler:    h.ListInvites,
 			Middleware: withAuth,
 		},
 	}
