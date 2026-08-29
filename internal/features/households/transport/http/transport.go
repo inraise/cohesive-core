@@ -75,6 +75,12 @@ type HouseholdsService interface {
 		callerID uuid.UUID,
 		request households_service.CreateInviteRequest,
 	) (core_domain.HouseholdInvite, error)
+
+	ListInvites(
+		ctx context.Context,
+		householdID uuid.UUID,
+		callerID uuid.UUID,
+	) ([]core_domain.HouseholdInvite, error)
 }
 
 func NewHouseholdsHTTPHandler(
@@ -150,6 +156,12 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:     http.MethodPost,
 			Path:       "/households/{id}/invites",
 			Handler:    h.CreateInvite,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodGet,
+			Path:       "/households/{id}/invites",
+			Handler:    h.ListInvites,
 			Middleware: withAuth,
 		},
 	}
