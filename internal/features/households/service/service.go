@@ -81,6 +81,12 @@ type HouseholdsRepository interface {
 		ctx context.Context,
 		householdID uuid.UUID,
 	) ([]core_domain.HouseholdInvite, error)
+
+	RevokeInvite(
+		ctx context.Context,
+		householdID uuid.UUID,
+		inviteID uuid.UUID,
+	) error
 }
 
 func NewHouseholdsService(
