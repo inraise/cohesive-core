@@ -32,8 +32,8 @@ cohesive-core/
 ├── internal/
 │   ├── core/                  # Инфраструктурный слой, общий для всех фич
 │   │   ├── config/            # Общая конфигурация приложения (тайм-зона и т.п.)
-│   │   ├── domain/             # Общие доменные типы (User, RefreshToken и др.)
-│   │   ├── errors/             # Базовые доменные ошибки (NotFound, Conflict, Unauthorized, ...)
+│   │   ├── domain/             # Общие доменные типы (User, RefreshToken, Household и др.)
+│   │   ├── errors/             # Базовые доменные ошибки (NotFound, Conflict, Unauthorized, Forbidden)
 │   │   ├── jwt/                 # Генерация и валидация JWT access-токенов
 │   │   ├── logger/              # Обёртка над zap + ротация файлов логов
 │   │   ├── repository/postgres/ # Пул соединений с PostgreSQL (pgx)
@@ -45,9 +45,14 @@ cohesive-core/
 │       │   ├── service/              # Бизнес-логика (хеширование пароля, JWT, ротация refresh-токенов)
 │       │   └── transport/http/       # HTTP-хендлеры и DTO
 │       │
-│       └── users/                # Профиль текущего пользователя (/users/me)
-│           ├── repository/postgres/  # SQL-запросы (users)
-│           ├── service/              # GetMe / PatchMe (partial update + оптимистичная блокировка) / DeleteMe
+│       ├── users/                # Профиль текущего пользователя (/users/me)
+│       │   ├── repository/postgres/  # SQL-запросы (users)
+│       │   ├── service/              # GetMe / PatchMe (partial update + оптимистичная блокировка) / DeleteMe
+│       │   └── transport/http/       # HTTP-хендлеры и DTO, все роуты под Authenticate middleware
+│       │
+│       └── households/           # Дома, участники и приглашения
+│           ├── repository/postgres/  # SQL-запросы (households, household_members, household_invites)
+│           ├── service/              # Бизнес-правила и проверки прав (owner/admin/member)
 │           └── transport/http/       # HTTP-хендлеры и DTO, все роуты под Authenticate middleware
 │
 ├── migrations/                 # SQL-миграции (golang-migrate)
@@ -60,12 +65,14 @@ cohesive-core/
 
 - **API-роутинг с версионированием.** `APIVersionRouter` регистрирует роуты фичи под префиксом `/api/v1`, который «срезается» перед тем, как запрос доходит до хендлера — фичи ничего не знают о версии API.
 - **Единая цепочка middleware.** На сервер накручены `CORS → RequestID → Logger → Trace → Panic` — запросы логируются и трассируются сквозным `request_id`, а паника в хендлере не роняет процесс.
-- **Фичи не знают друг о друге.** `auth` работает только через собственный интерфейс `AuthService` и общий `core_domain.User` — добавление новой фичи (например, `households`) не требует правок в существующих.
-- **Явные ошибки домена.** `core/errors` определяет базовый набор ошибок (`ErrNotFound`, `ErrInvalidArgument`, `ErrConflict`, `ErrUnauthorized`), которые оборачиваются на каждом слое и мапятся в HTTP-статусы в `response`-пакете.
+- **Фичи не знают друг о друге.** Каждая фича работает только через собственный интерфейс сервиса и общие `core_domain`-типы — добавление новой фичи не требует правок в существующих.
+- **Явные ошибки домена.** `core/errors` определяет базовый набор ошибок (`ErrNotFound`, `ErrInvalidArgument`, `ErrConflict`, `ErrUnauthorized`, `ErrForbidden`), которые оборачиваются на каждом слое и мапятся в HTTP-статусы (404/400/409/401/403) в `response`-пакете.
 - **Stateless access + отзываемый refresh.** Access-токен — обычный подписанный JWT (`core/jwt`), сервер его не хранит и не может отозвать раньше `exp` (15 минут). Refresh-токен — непрозрачная случайная строка, её SHA-256 хеш живёт в таблице `refresh_tokens`; именно это позволяет по-настоящему отзывать сессии на `/auth/logout` и делать ротацию на `/auth/refresh`.
-- **Точечная авторизация через middleware.** `Authenticate` (`core/transport/http/middleware/auth.go`) вешается на конкретные роуты через `Route.Middleware`, а не глобально на сервер — так публичные `/auth/*`-эндпоинты остаются без токена, а все `/users/me` его требуют. Хендлер достаёт `user_id` из контекста (`UserIDFromContext`), а не из тела/query запроса — иначе можно было бы подставить чужой id, имея свой валидный токен.
-- **Partial update через `Nullable[T]`.** `PATCH /users/me` отличает «поле не прислали» от «поле прислали как `null`» с помощью generic-обёртки `Nullable[T]` с кастомным `UnmarshalJSON` (`core/transport/http/types`) — JSON-декодер вызывает `UnmarshalJSON` только для ключей, которые реально есть в теле запроса. Домен (`core_domain.UserPatch.ApplyPatch`) применяет только `Set == true` поля и валидирует результат целиком, не зная деталей HTTP-слоя.
-- **Оптимистичная блокировка через `Version`.** `PatchMe` в репозитории обновляет строку через `WHERE id = $1 AND version = $2` и одновременно увеличивает `version`; если конкурентный запрос успел изменить профиль между чтением и записью — `UPDATE` не находит строку, и это мапится в `409 Conflict`.
+- **Точечная авторизация через middleware.** `Authenticate` (`core/transport/http/middleware/auth.go`) вешается на конкретные роуты через `Route.Middleware`, а не глобально на сервер — так публичные `/auth/*`-эндпоинты остаются без токена, а всё под `/users/me` и `/households/*` его требуют. Хендлер достаёт `user_id` из контекста (`UserIDFromContext`), а не из тела/query запроса — иначе можно было бы подставить чужой id, имея свой валидный токен.
+- **Partial update через `Nullable[T]`.** `PATCH /users/me` отличает «поле не прислали» от «поле прислали как `null`» с помощью generic-обёртки `Nullable[T]` с кастомным `UnmarshalJSON` (`core/transport/http/types`).
+- **Оптимистичная блокировка через `Version`.** И у `User`, и у `Household` есть поле `version`. Обновления идут через `WHERE id = $1 AND version = $2` с одновременным `version = version + 1`; если конкурентный запрос успел изменить строку между чтением и записью — `UPDATE` не находит строк, и это мапится в `409 Conflict`.
+- **Роль — свойство членства, а не сущности.** `household_members.role` хранит роль конкретного юзера в конкретном доме (`owner`/`admin`/`member`), а не колонка в `households` — один и тот же человек может быть `owner` в одном доме и `member` в другом. Единственность `owner` в доме поддерживается не схемой, а атомарной операцией `TransferOwnership` (см. ниже).
+- **Многошаговые операции без транзакций на уровне Go.** `Pool` (`core/repository/postgres/pool`) не предоставляет `Begin`/`Commit` — везде, где нужна атомарность нескольких `INSERT`/`UPDATE` (создание дома + owner-membership, приём инвайта, передача владения), используются **data-modifying CTE**: несколько операций в одном SQL-запросе, который Postgres выполняет как единое целое.
 
 -----
 
@@ -74,7 +81,7 @@ cohesive-core/
 |Категория          |Технология                                                                |
 |-------------------|--------------------------------------------------------------------------|
 |Язык               |Go 1.26                                                                   |
-|HTTP               |`net/http` (`http.ServeMux`), без веб-фреймворка                          |
+|HTTP               |`net/http` (`http.ServeMux`, паттерны Go 1.22+ с `{wildcard}` в пути), без веб-фреймворка|
 |База данных        |PostgreSQL 17 + [`pgx/v5`](https://github.com/jackc/pgx) (connection pool)|
 |Миграции           |[`golang-migrate`](https://github.com/golang-migrate/migrate)             |
 |Логирование        |[`zap`](https://github.com/uber-go/zap)                                   |
@@ -82,6 +89,7 @@ cohesive-core/
 |Валидация          |[`go-playground/validator`](https://github.com/go-playground/validator)   |
 |Хеширование паролей|`bcrypt`                                                                  |
 |Токены             |JWT ([`golang-jwt/jwt/v5`](https://github.com/golang-jwt/jwt)) для access, opaque-строка + SHA-256 для refresh|
+|Инвайт-коды        |Случайные base32-строки (`crypto/rand`)                                   |
 |Контейнеризация    |Docker / Docker Compose                                                   |
 
 -----
@@ -182,11 +190,18 @@ make cohesive-undeploy # остановка
 
 ## API
 
-Базовый префикс всех эндпоинтов фич: **`/api/v1`**.
+Базовый префикс всех эндпоинтов фич: **`/api/v1`**. Эндпоинты, помеченные 🔒, требуют заголовок `Authorization: Bearer <access_token>`.
 
-### `POST /api/v1/auth/register`
+### Auth
 
-Регистрация нового пользователя.
+|Метод и путь                        |Описание                                                        |
+|-------------------------------------|-----------------------------------------------------------------|
+|`POST /auth/register`                |Регистрация нового пользователя                                  |
+|`POST /auth/login`                   |Логин по email/паролю → access + refresh токены                  |
+|`POST /auth/refresh`                 |Обмен refresh-токена на новую пару (с ротацией)                  |
+|`POST /auth/logout`                  |Отзыв refresh-токена                                              |
+
+#### `POST /api/v1/auth/register`
 
 **Request body**
 
@@ -204,62 +219,15 @@ make cohesive-undeploy # остановка
 |------------|------|-----------|--------------------------------------------|
 |`email`     |string|+          |5–100 символов                              |
 |`password`  |string|+          |10–100 символов, хранится в виде bcrypt-хеша|
-|`first_name`|string|+          |3–100 символов                              |
-|`last_name` |string|—          |3–100 символов                              |
+|`first_name`|string|+          |1–100 символов                              |
+|`last_name` |string|—          |1–100 символов                              |
 |`age`       |int   |—          |0–130                                       |
 
-**Response `201 Created`**
+**Response `201 Created`** — профиль пользователя (без `password_hash`).
 
-```json
-{
-  "id": "e5c1f2b0-...-uuid",
-  "version": 1,
-  "email": "user@example.com",
-  "first_name": "John",
-  "last_name": "Doe",
-  "age": 28,
-  "created_at": "2026-08-04T05:00:00Z",
-  "updated_at": "2026-08-04T05:00:00Z"
-}
-```
+#### `POST /api/v1/auth/login`
 
-**Ответ с ошибкой**
-
-```json
-{
-  "error": "validate user domain: invalid `Email` len: 3: invalid argument",
-  "message": "failed to create user"
-}
-```
-
-**Пример запроса**
-
-```bash
-curl -X POST http://localhost:5050/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "supersecurepassword",
-    "first_name": "John",
-    "last_name": "Doe",
-    "age": 28
-  }'
-```
-
------
-
-### `POST /api/v1/auth/login`
-
-Логин по email/паролю. Выдаёт пару токенов: короткоживущий access (JWT, `JWT_ACCESS_TTL`) и долгоживущий refresh (opaque-строка, `JWT_REFRESH_TTL`), хеш которого сохраняется в `refresh_tokens`.
-
-**Request body**
-
-```json
-{
-  "email": "user@example.com",
-  "password": "supersecurepassword"
-}
-```
+**Request body**: `{"email": "...", "password": "..."}`
 
 **Response `200 OK`**
 
@@ -271,110 +239,35 @@ curl -X POST http://localhost:5050/api/v1/auth/register \
 }
 ```
 
-`expires_at` относится к `access_token`. Неверный email или пароль дают `400 Bad Request` — намеренно одну и ту же ошибку для обоих случаев, чтобы нельзя было перебором выяснить, какие email зарегистрированы.
+Неверный email или пароль → `400 Bad Request` — намеренно одна и та же ошибка для обоих случаев.
 
-**Пример запроса**
+#### `POST /api/v1/auth/refresh`
 
-```bash
-curl -X POST http://localhost:5050/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "supersecurepassword"
-  }'
-```
+**Request body**: `{"refresh_token": "..."}` → тот же формат ответа, что у `/login`. Использованный refresh-токен сразу отзывается (ротация). Невалидный/истёкший/уже использованный токен → `401 Unauthorized`.
+
+#### `POST /api/v1/auth/logout`
+
+**Request body**: `{"refresh_token": "..."}` → `204 No Content`. Идемпотентен: если токена уже нет — тоже `204`.
 
 -----
 
-### `POST /api/v1/auth/refresh`
+### Users 🔒
 
-Меняет валидный refresh-токен на новую пару access + refresh. Использованный refresh-токен сразу отзывается (ротация) — повторно предъявить его нельзя, даже если он был перехвачен.
+|Метод и путь        |Описание                              |
+|---------------------|----------------------------------------|
+|`GET /users/me`      |Профиль текущего пользователя           |
+|`PATCH /users/me`    |Частичное обновление профиля            |
+|`DELETE /users/me`   |Безвозвратное удаление аккаунта         |
 
-**Request body**
+#### `GET /api/v1/users/me`
 
-```json
-{
-  "refresh_token": "9f1c2b7a3e5d..."
-}
-```
+**Response `200 OK`** — профиль (без `password_hash`).
 
-**Response `200 OK`** — такой же формат, как у `/auth/login`.
+#### `PATCH /api/v1/users/me`
 
-Невалидный, истёкший, уже отозванный или уже использованный refresh-токен — `401 Unauthorized`.
+Меняются только присланные поля (см. `Nullable[T]` в архитектурных решениях). Пароль передаётся как обычный текст — сервер сам его хеширует.
 
-**Пример запроса**
-
-```bash
-curl -X POST http://localhost:5050/api/v1/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "9f1c2b7a3e5d..."}'
-```
-
------
-
-### `POST /api/v1/auth/logout`
-
-Отзывает refresh-токен: им больше нельзя получить новый access-токен. Access-токен, уже выданный клиенту, продолжит работать до истечения своего TTL — это осознанный компромисс stateless access-токенов, полноценного server-side kill switch для них нет.
-
-**Request body**
-
-```json
-{
-  "refresh_token": "9f1c2b7a3e5d..."
-}
-```
-
-**Response `204 No Content`**
-
-Если токен уже не существует/уже отозван — тоже `204`, logout идемпотентен.
-
-**Пример запроса**
-
-```bash
-curl -X POST http://localhost:5050/api/v1/auth/logout \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token": "9f1c2b7a3e5d..."}'
-```
-
------
-
-### `GET /api/v1/users/me`
-
-Профиль текущего пользователя. Требует заголовок `Authorization: Bearer <access_token>` — обрабатывается `Authenticate` middleware до хендлера.
-
-**Response `200 OK`**
-
-```json
-{
-  "id": "e5c1f2b0-...-uuid",
-  "version": 1,
-  "email": "user@example.com",
-  "first_name": "John",
-  "last_name": "Doe",
-  "age": 28,
-  "created_at": "2026-08-04T05:00:00Z",
-  "updated_at": "2026-08-04T05:00:00Z"
-}
-```
-
-`password_hash` в ответе никогда не присутствует — DTO собирается вручную, без него.
-
-Нет/просрочен/невалиден токен — `401 Unauthorized`, до хендлера дело не доходит.
-
-**Пример запроса**
-
-```bash
-curl http://localhost:5050/api/v1/users/me \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
-```
-
------
-
-### `PATCH /api/v1/users/me`
-
-Частичное обновление профиля. Меняются только присланные поля — отсутствие ключа в JSON и присланное значение `null` различаются (см. `Nullable[T]` в архитектурных решениях выше). Пароль передаётся как обычный текст (сервер сам его хеширует), а не как хеш.
-
-**Request body** (любое подмножество полей)
+**Request body** (любое подмножество)
 
 ```json
 {
@@ -386,41 +279,141 @@ curl http://localhost:5050/api/v1/users/me \
 }
 ```
 
-|Поле        |Тип   |Валидация при указании                      |
-|------------|------|---------------------------------------------|
-|`email`     |string|5–100 символов                                |
-|`password`  |string|10–100 символов; хешируется bcrypt перед сохранением, `password_hash` клиенту не возвращается|
-|`first_name`|string|1–100 символов, нельзя явно выставить `null`  |
-|`last_name` |string|1–100 символов, можно явно выставить `null`   |
-|`age`       |int   |0–130, можно явно выставить `null`             |
+|Поле        |Тип   |Валидация при указании                                          |
+|------------|------|------------------------------------------------------------------|
+|`email`     |string|5–100 символов                                                     |
+|`password`  |string|10–100 символов; хешируется bcrypt, в ответе не возвращается       |
+|`first_name`|string|1–100 символов, нельзя явно выставить `null`                       |
+|`last_name` |string|1–100 символов, можно явно выставить `null`                        |
+|`age`       |int   |0–130, можно явно выставить `null`                                  |
 
-**Response `200 OK`** — обновлённый профиль, формат как у `GET /users/me`.
+**Response `200 OK`** — обновлённый профиль. Конфликт версии → `409 Conflict`.
 
-Конфликт версии (профиль успели изменить между чтением и записью, например из другой сессии) — `409 Conflict`. Некорректные значения — `400 Bad Request`.
+#### `DELETE /api/v1/users/me`
 
-**Пример запроса**
-
-```bash
-curl -X PATCH http://localhost:5050/api/v1/users/me \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-  -H "Content-Type: application/json" \
-  -d '{"first_name": "Jane"}'
-```
+Жёсткое удаление, без возможности восстановления. Каскадом удаляются `refresh_tokens` и членство во всех домах (`household_members`). **Response `204 No Content`**.
 
 -----
 
-### `DELETE /api/v1/users/me`
+### Households 🔒
 
-Безвозвратное удаление аккаунта (жёсткое, без soft-delete). Каскадом удаляются и все `refresh_tokens` пользователя (`ON DELETE CASCADE`).
+|Метод и путь                                    |Кто может               |Описание                                    |
+|--------------------------------------------------|-------------------------|----------------------------------------------|
+|`POST /households`                                |любой авторизованный     |Создать дом (создатель становится `owner`)     |
+|`GET /households`                                 |любой авторизованный     |Список своих домов с ролью в каждом            |
+|`GET /households/{id}`                            |участник дома            |Карточка дома                                  |
+|`PATCH /households/{id}`                          |`owner`, `admin`         |Переименовать дом                              |
+|`DELETE /households/{id}`                         |`owner`                  |Удалить дом целиком                            |
+|`GET /households/{id}/members`                    |участник дома            |Список участников с ролями                     |
+|`DELETE /households/{id}/members/{user_id}`       |см. ниже                 |Убрать участника / выйти самому                |
+|`PATCH /households/{id}/members/{user_id}`        |`owner`                  |Сменить роль участника или передать владение    |
+|`POST /households/{id}/invites`                   |`owner`, `admin`         |Создать инвайт-код                             |
+|`GET /households/{id}/invites`                    |`owner`, `admin`         |Список инвайтов                                |
+|`DELETE /households/{id}/invites/{invite_id}`     |`owner`, `admin`         |Отозвать инвайт                                |
+|`POST /households/invites/{code}/accept`          |любой авторизованный     |Принять приглашение по коду → стать `member`   |
 
-**Response `204 No Content`**
+Если дома с указанным `id` не существует **или** юзер в нём не состоит — везде отдаётся один и тот же `404 Not Found`, а не `403` — иначе по разнице кодов можно было бы перебором узнавать существование чужих домов.
 
-**Пример запроса**
+#### `POST /api/v1/households`
 
-```bash
-curl -X DELETE http://localhost:5050/api/v1/users/me \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+**Request body**: `{"name": "Моя квартира"}` (1–100 символов)
+
+**Response `201 Created`**
+
+```json
+{
+  "id": "e5c1f2b0-...-uuid",
+  "version": 1,
+  "name": "Моя квартира",
+  "role": "owner",
+  "created_at": "2026-08-20T10:00:00Z",
+  "updated_at": "2026-08-20T10:00:00Z"
+}
 ```
+
+#### `GET /api/v1/households`
+
+**Response `200 OK`** — массив объектов в том же формате, что у `POST`, каждый со своей `role`. Пустой список → `[]`, не `null`.
+
+#### `GET /api/v1/households/{id}`
+
+Тот же формат объекта, что выше. Доступно только участнику дома.
+
+#### `PATCH /api/v1/households/{id}`
+
+**Request body**: `{"name": "Новое название"}`. Конфликт версии → `409`. Роль ниже `admin` → `403`.
+
+#### `DELETE /api/v1/households/{id}`
+
+Только `owner`. Каскадом удаляются `household_members` и `household_invites`. **Response `204`**.
+
+#### `GET /api/v1/households/{id}/members`
+
+**Response `200 OK`**
+
+```json
+[
+  {
+    "user_id": "...",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "role": "owner",
+    "joined_at": "2026-08-20T10:00:00Z"
+  }
+]
+```
+
+#### `DELETE /api/v1/households/{id}/members/{user_id}`
+
+Покрывает и «выгнать другого», и «выйти самому» (когда `user_id` == себе):
+
+- Выход из дома разрешён всем, **кроме** единственного `owner` — сначала нужно передать владение (`PATCH .../members/{id}` с `role: owner`) или удалить дом целиком (`409 Conflict`, если попытаться).
+- `admin` может убрать только `member`, не другого `admin` и не `owner` (`403`).
+- `owner` может убрать любого.
+
+**Response `204`**.
+
+#### `PATCH /api/v1/households/{id}/members/{user_id}`
+
+Только `owner`. **Request body**: `{"role": "admin" | "member" | "owner"}`.
+
+- `role: admin` / `role: member` — обычная смена роли.
+- `role: owner` — **передача владения**: атомарно (одним SQL-запросом) caller становится `admin`, а target — новым `owner`. Нельзя применить к себе (`400`).
+
+**Response `204`**.
+
+#### `POST /api/v1/households/{id}/invites`
+
+`owner`/`admin`. **Request body**: `{"max_uses": 5}` (необязательно, лимит использований). Срок жизни инвайта фиксирован — 7 дней.
+
+**Response `201 Created`**
+
+```json
+{
+  "id": "...",
+  "code": "K3F9XQPA",
+  "expires_at": "2026-08-27T10:00:00Z",
+  "max_uses": 5,
+  "use_count": 0,
+  "revoked_at": null,
+  "created_at": "2026-08-20T10:00:00Z"
+}
+```
+
+#### `GET /api/v1/households/{id}/invites`
+
+`owner`/`admin`. **Response `200 OK`** — массив инвайтов (включая уже отозванные/исчерпанные — по `revoked_at`/`use_count` видно их состояние).
+
+#### `DELETE /api/v1/households/{id}/invites/{invite_id}`
+
+`owner`/`admin`. **Response `204`**.
+
+#### `POST /api/v1/households/invites/{code}/accept`
+
+Единственная ручка в фиче, не требующая членства в доме — только валидный access-токен. Атомарно проверяет, что код не отозван, не истёк, не исчерпан по `max_uses`, и что юзер ещё не участник — и добавляет его как `member`.
+
+**Response `200 OK`** — карточка дома, `role: "member"`. Невалидный/истёкший/исчерпанный/уже принятый код → `400 Bad Request`.
 
 -----
 
@@ -451,7 +444,49 @@ curl -X DELETE http://localhost:5050/api/v1/users/me \
 |`revoked_at` |`TIMESTAMPTZ` |nullable — `NULL`, пока токен активен                |
 |`created_at` |`TIMESTAMPTZ` |`NOT NULL DEFAULT now()`                             |
 
-Индекс `idx_refresh_tokens_user_id` — по `user_id`, на будущее для операций вида «отозвать все сессии пользователя».
+Индекс `idx_refresh_tokens_user_id` — по `user_id`.
+
+Таблицы `households`, `household_members`, `household_invites` (миграция `000003_households`):
+
+**`households`**
+
+|Колонка      |Тип           |Ограничения                                |
+|-------------|--------------|--------------------------------------------|
+|`id`         |`UUID`        |`PRIMARY KEY`, `DEFAULT uuid_generate_v4()`|
+|`version`    |`INT`         |`NOT NULL DEFAULT 1`                       |
+|`name`       |`VARCHAR(100)`|`NOT NULL`, длина 1–100                    |
+|`created_at` |`TIMESTAMPTZ` |`NOT NULL DEFAULT now()`                   |
+|`updated_at` |`TIMESTAMPTZ` |`NOT NULL DEFAULT now()`, `CHECK(created_at <= updated_at)`|
+
+**`household_members`** — владелец дома не отдельная колонка, а участник с `role = 'owner'`; единственность `owner` в доме поддерживается атомарностью `TransferOwnership`, а не схемой.
+
+|Колонка        |Тип           |Ограничения                                          |
+|---------------|--------------|-------------------------------------------------------|
+|`id`           |`UUID`        |`PRIMARY KEY`, `DEFAULT uuid_generate_v4()`            |
+|`household_id` |`UUID`        |`NOT NULL`, `REFERENCES households(id) ON DELETE CASCADE`|
+|`user_id`      |`UUID`        |`NOT NULL`, `REFERENCES users(id) ON DELETE CASCADE`   |
+|`role`         |`VARCHAR(20)` |`NOT NULL DEFAULT 'member'`, `CHECK IN ('owner','admin','member')`|
+|`joined_at`    |`TIMESTAMPTZ` |`NOT NULL DEFAULT now()`                               |
+|                |              |`UNIQUE(household_id, user_id)`                        |
+
+Индексы: `idx_household_members_user_id`, `idx_household_members_household_id`.
+
+**`household_invites`**
+
+|Колонка       |Тип           |Ограничения                                              |
+|--------------|--------------|------------------------------------------------------------|
+|`id`          |`UUID`        |`PRIMARY KEY`, `DEFAULT uuid_generate_v4()`                |
+|`household_id`|`UUID`        |`NOT NULL`, `REFERENCES households(id) ON DELETE CASCADE`  |
+|`code`        |`VARCHAR(32)` |`NOT NULL UNIQUE` (глобально, не per-household)             |
+|`created_by`  |`UUID`        |`NOT NULL`, `REFERENCES users(id) ON DELETE CASCADE`        |
+|`expires_at`  |`TIMESTAMPTZ` |`NOT NULL`                                                   |
+|`max_uses`    |`INT`         |nullable — `NULL` = безлимитный                              |
+|`use_count`   |`INT`         |`NOT NULL DEFAULT 0`                                         |
+|`revoked_at`  |`TIMESTAMPTZ` |nullable                                                     |
+|`created_at`  |`TIMESTAMPTZ` |`NOT NULL DEFAULT now()`                                     |
+|              |              |`CHECK(max_uses IS NULL OR use_count <= max_uses)` — защита от гонки при одновременном использовании последнего инвайта|
+
+Индекс `idx_household_invites_household_id`.
 
 -----
 
@@ -463,20 +498,14 @@ curl -X DELETE http://localhost:5050/api/v1/users/me \
 
 ## Roadmap
 
-Проект в активной разработке. В ближайших планах:
+Проект в активной разработке.
 
-**Модуль пользователей**
+**Авторизация, пользователи, дома — базовый CRUD**
 
-- [ ] Роли и права доступа
-
-**Модуль семьи**
-
-- [V] Создание и редактирование семьи
-- [ ] Приглашение участников по ссылке/коду
-- [V] Разграничение прав внутри группы
-
-**Качество и CI/CD**
-
-- [ ] Unit-тесты для слоёв service и repository (моки)
-- [ ] Интеграционные тесты через `testcontainers-go`
-- [ ] `golangci-lint` и CI/CD pipeline на GitHub Actions
+- [x] JWT access-токены + login/refresh/logout
+- [x] Refresh-токены с ротацией и server-side отзывом
+- [x] `Authenticate` middleware на защищённых роутах
+- [x] `/users/me` — GET/PATCH/DELETE
+- [x] `/households` — создание, список, карточка, переименование, удаление
+- [x] Участники домов — список, удаление/выход, смена роли, передача владения
+- [x] Инвайты — создание, список, отзыв, приём по коду
