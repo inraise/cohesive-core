@@ -88,6 +88,12 @@ type HouseholdsService interface {
 		callerID uuid.UUID,
 		inviteID uuid.UUID,
 	) error
+
+	AcceptInvite(
+		ctx context.Context,
+		code string,
+		userID uuid.UUID,
+	) (core_domain.Household, error)
 }
 
 func NewHouseholdsHTTPHandler(
@@ -175,6 +181,12 @@ func (h *HouseholdsHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:     http.MethodDelete,
 			Path:       "/households/{id}/invites/{invite_id}",
 			Handler:    h.RevokeInvite,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodPost,
+			Path:       "/households/invites/{code}/accept",
+			Handler:    h.AcceptInvite,
 			Middleware: withAuth,
 		},
 	}
