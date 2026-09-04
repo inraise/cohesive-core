@@ -9,6 +9,14 @@ type TasksHTTPHandler struct {
 type TaskService interface {
 }
 
+func NewTasksHTTPHandler(
+	tasksService TaskService,
+) *TasksHTTPHandler {
+	return &TasksHTTPHandler{
+		tasksService: tasksService,
+	}
+}
+
 func (h *TasksHTTPHandler) Routes() []core_transport_http_server.Route {
 	return []core_transport_http_server.Route{}
 }
