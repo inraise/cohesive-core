@@ -8,4 +8,5 @@ var (
 	ErrConflict        = errors.New("conflict")
 	ErrUnauthorized    = errors.New("unauthorized")
 	ErrForbidden       = errors.New("forbidden")
+	ErrTooManyRequests = errors.New("too many requests")
 )

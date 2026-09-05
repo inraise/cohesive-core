@@ -5,6 +5,7 @@ import (
 	core_jwt "cohesive-core/internal/core/jwt"
 	core_logger "cohesive-core/internal/core/logger"
 	core_pool_pgx "cohesive-core/internal/core/repository/postgres/pool/pgx"
+	core_pool_redis "cohesive-core/internal/core/repository/redis/pool"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_server "cohesive-core/internal/core/transport/http/server"
 	auth_repository_postgres "cohesive-core/internal/features/auth/repository/postgres"
@@ -61,10 +62,17 @@ func main() {
 		logger.Fatal("failed to init JWT token manager", zap.Error(err))
 	}
 
+	logger.Debug("initializing redis client")
+	redisClient, err := core_pool_redis.NewClient(core_pool_redis.NewConfigMust())
+	if err != nil {
+		logger.Fatal("failed to init redis client", zap.Error(err))
+	}
+	defer redisClient.Close()
+
 	logger.Debug("initializing feature", zap.String("feature", "auth"))
 	authRepository := auth_repository_postgres.NewAuthRepository(pool)
 	authService := auth_service.NewAuthService(authRepository, tokenManager, jwtConfig.RefreshTTL)
-	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
+	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, redisClient)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersRepository := users_repository_postgres.NewUsersRepository(pool)
