@@ -35,6 +35,12 @@ type TasksRepository interface {
 		ctx context.Context,
 		householdID uuid.UUID,
 	) ([]core_domain.Task, error)
+
+	GetTaskByID(
+		ctx context.Context,
+		householdID uuid.UUID,
+		taskID uuid.UUID,
+	) (core_domain.Task, error)
 }
 
 func NewTasksService(

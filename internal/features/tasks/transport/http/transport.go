@@ -37,6 +37,13 @@ type TasksService interface {
 		householdID uuid.UUID,
 		callerID uuid.UUID,
 	) ([]core_domain.Task, error)
+
+	GetTask(
+		ctx context.Context,
+		householdID uuid.UUID,
+		taskID uuid.UUID,
+		callerID uuid.UUID,
+	) (core_domain.Task, error)
 }
 
 func NewTasksHTTPHandler(
