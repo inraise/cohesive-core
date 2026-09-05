@@ -24,6 +24,17 @@ type TasksRepository interface {
 		ctx context.Context,
 		task core_domain.Task,
 	) (core_domain.Task, error)
+
+	DeleteTask(
+		ctx context.Context,
+		householdID uuid.UUID,
+		taskID uuid.UUID,
+	) error
+
+	ListTasks(
+		ctx context.Context,
+		householdID uuid.UUID,
+	) ([]core_domain.Task, error)
 }
 
 func NewTasksService(
