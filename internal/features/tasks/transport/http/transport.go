@@ -24,6 +24,13 @@ type TasksService interface {
 		callerID uuid.UUID,
 		request tasks_service.CreateTaskRequest,
 	) (core_domain.Task, error)
+
+	DeleteTask(
+		ctx context.Context,
+		householdID uuid.UUID,
+		taskID uuid.UUID,
+		callerID uuid.UUID,
+	) error
 }
 
 func NewTasksHTTPHandler(
