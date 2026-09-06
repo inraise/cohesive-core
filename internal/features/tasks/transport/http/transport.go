@@ -44,6 +44,14 @@ type TasksService interface {
 		taskID uuid.UUID,
 		callerID uuid.UUID,
 	) (core_domain.Task, error)
+
+	PatchTask(
+		ctx context.Context,
+		householdID uuid.UUID,
+		taskID uuid.UUID,
+		callerID uuid.UUID,
+		patch core_domain.TaskPatch,
+	) (core_domain.Task, error)
 }
 
 func NewTasksHTTPHandler(

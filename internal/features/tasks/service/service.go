@@ -41,6 +41,11 @@ type TasksRepository interface {
 		householdID uuid.UUID,
 		taskID uuid.UUID,
 	) (core_domain.Task, error)
+
+	PatchTask(
+		ctx context.Context,
+		task core_domain.Task,
+	) (core_domain.Task, error)
 }
 
 func NewTasksService(
