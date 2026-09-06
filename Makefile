@@ -9,6 +9,12 @@ env-up:
 env-down:
 	@docker compose down cohesive-postgres
 
+redis-up:
+	@docker compose up -d cohesive-redis
+
+redis-down:
+	@docker compose down -d cohesive-redis
+
 env-cleanup:
 	@read -p "Отчистить все файлы окружения? [y/N]: " ans; \
 	if [ "$$ans" = "y" ]; then \

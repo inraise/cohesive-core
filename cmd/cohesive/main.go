@@ -5,6 +5,7 @@ import (
 	core_jwt "cohesive-core/internal/core/jwt"
 	core_logger "cohesive-core/internal/core/logger"
 	core_pool_pgx "cohesive-core/internal/core/repository/postgres/pool/pgx"
+	core_pool_redis "cohesive-core/internal/core/repository/redis/pool"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_server "cohesive-core/internal/core/transport/http/server"
 	auth_repository_postgres "cohesive-core/internal/features/auth/repository/postgres"
@@ -13,6 +14,9 @@ import (
 	households_repository_postgres "cohesive-core/internal/features/households/repository/postgres"
 	households_service "cohesive-core/internal/features/households/service"
 	households_transport_http "cohesive-core/internal/features/households/transport/http"
+	tasks_repository_postgres "cohesive-core/internal/features/tasks/repository/postgres"
+	tasks_service "cohesive-core/internal/features/tasks/service"
+	tasks_transport_http "cohesive-core/internal/features/tasks/transport/http"
 	users_repository_postgres "cohesive-core/internal/features/users/repository/postgres"
 	users_service "cohesive-core/internal/features/users/service"
 	users_transport_http "cohesive-core/internal/features/users/transport/http"
@@ -61,10 +65,17 @@ func main() {
 		logger.Fatal("failed to init JWT token manager", zap.Error(err))
 	}
 
+	logger.Debug("initializing redis client")
+	redisClient, err := core_pool_redis.NewClient(core_pool_redis.NewConfigMust())
+	if err != nil {
+		logger.Fatal("failed to init redis client", zap.Error(err))
+	}
+	defer redisClient.Close()
+
 	logger.Debug("initializing feature", zap.String("feature", "auth"))
 	authRepository := auth_repository_postgres.NewAuthRepository(pool)
 	authService := auth_service.NewAuthService(authRepository, tokenManager, jwtConfig.RefreshTTL)
-	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService)
+	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, redisClient)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersRepository := users_repository_postgres.NewUsersRepository(pool)
@@ -75,6 +86,11 @@ func main() {
 	householdsRepository := households_repository_postgres.NewHouseholdsRepository(pool)
 	householdsService := households_service.NewHouseholdsService(householdsRepository)
 	householdsTransportHTTP := households_transport_http.NewHouseholdsHTTPHandler(householdsService, tokenManager)
+
+	logger.Debug("initializing feature", zap.String("feature", "tasks"))
+	tasksRepository := tasks_repository_postgres.NewAuthRepository(pool)
+	tasksService := tasks_service.NewTasksService(tasksRepository)
+	tasksTransportHTTP := tasks_transport_http.NewTasksHTTPHandler(tasksService, tokenManager)
 
 	logger.Debug("initializing HTTP server")
 
@@ -96,6 +112,7 @@ func main() {
 	apiVersionRouterV1.RegisterRoutes(authTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(usersTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(householdsTransportHTTP.Routes()...)
+	apiVersionRouterV1.RegisterRoutes(tasksTransportHTTP.Routes()...)
 	httpServer.RegisterAPIRoutes(apiVersionRouterV1)
 
 	if err := httpServer.Run(ctx); err != nil {
