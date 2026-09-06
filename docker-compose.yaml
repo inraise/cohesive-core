@@ -17,6 +17,9 @@ services:
       - LOGGER_LEVEL=${LOGGER_LEVEL}
       - TIME_ZONE=${TIME_ZONE}
       - LOGGER_FOLDER=/app/out/logs
+      - REDIS_ADDR=${REDIS_ADDR}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB}
     volumes:
       - ${PROJECT_ROOT}/out/logs:/app/out/logs
     ports:
@@ -33,7 +36,7 @@ services:
     volumes:
       - ${PROJECT_ROOT}/out/pgdata:/var/lib/postgresql
     restart: always
-  
+
   cohesive-postgres-migrate:
     image: migrate/migrate:v4.19.1
     volumes:
@@ -45,3 +48,10 @@ services:
     command: tcp-listen:5432,fork,reuseaddr tcp-connect:cohesive-postgres:5432
     ports:
       - "127.0.0.1:5432:5432"
+
+  cohesive-redis:
+    image: redis:7-alpine
+    container_name: cohesive-redis
+    ports:
+      - "6379:6379"
+    restart: always
