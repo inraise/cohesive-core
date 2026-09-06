@@ -88,7 +88,7 @@ func main() {
 	householdsTransportHTTP := households_transport_http.NewHouseholdsHTTPHandler(householdsService, tokenManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "tasks"))
-	tasksRepository := tasks_repository_postgres.NewAuthRepository(pool)
+	tasksRepository := tasks_repository_postgres.NewTasksRepository(pool)
 	tasksService := tasks_service.NewTasksService(tasksRepository)
 	tasksTransportHTTP := tasks_transport_http.NewTasksHTTPHandler(tasksService, tokenManager)
 
