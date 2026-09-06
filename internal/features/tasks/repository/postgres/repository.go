@@ -6,7 +6,7 @@ type TasksRepository struct {
 	pool core_pool.Pool
 }
 
-func NewAuthRepository(
+func NewTasksRepository(
 	pool core_pool.Pool,
 ) *TasksRepository {
 	return &TasksRepository{
