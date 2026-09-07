@@ -52,6 +52,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
                         }
                     },
+                    "429": {
+                        "description": "Too many requests",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -65,9 +71,6 @@ const docTemplate = `{
             "post": {
                 "description": "Выход пользователя из системы",
                 "consumes": [
-                    "application/json"
-                ],
-                "produces": [
                     "application/json"
                 ],
                 "tags": [
@@ -86,7 +89,7 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
+                    "204": {
                         "description": "Успешный выход"
                     },
                     "400": {
@@ -106,7 +109,7 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Обновление токена авторизированного пользователя",
+                "description": "Обновление токена авторизованного пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -130,13 +133,25 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Токен успешно обновлен",
+                        "description": "Токен успешно обновлён",
                         "schema": {
                             "$ref": "#/definitions/auth_service.LoginDTOResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
                         "schema": {
                             "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
                         }
@@ -183,6 +198,766 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получить список домов, в которых состоит текущий пользователь, с ролью в каждом",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Список моих домов",
+                "responses": {
+                    "200": {
+                        "description": "Список домов",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/households_transport_http.HouseholdDTOResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Создать новый дом, создатель становится владельцем (owner)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Создать дом",
+                "parameters": [
+                    {
+                        "description": "CreateHousehold тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/households_service.CreateHouseholdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Дом создан",
+                        "schema": {
+                            "$ref": "#/definitions/households_transport_http.HouseholdDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/invites/{code}/accept": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Присоединиться к дому по коду приглашения, становится member. Не требует предварительного членства в доме - только валидный access-токен",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Принять инвайт",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Код приглашения",
+                        "name": "code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Приглашение принято",
+                        "schema": {
+                            "$ref": "#/definitions/households_transport_http.HouseholdDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invite is invalid, expired, exhausted, or already accepted",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получить карточку дома. Доступно только участнику дома",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Получить дом",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Дом",
+                        "schema": {
+                            "$ref": "#/definitions/households_transport_http.HouseholdDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Безвозвратно удалить дом целиком (каскадом удаляются участники, инвайты и задачи). Доступно только owner",
+                "tags": [
+                    "households"
+                ],
+                "summary": "Удалить дом",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Дом удалён"
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - only owner can delete household",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Изменить название дома. Доступно owner и admin",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Переименовать дом",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "RenameHousehold тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/households_service.RenameHouseholdRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Дом переименован",
+                        "schema": {
+                            "$ref": "#/definitions/households_transport_http.HouseholdDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - role can't rename household",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Version conflict",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/{id}/invites": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получить список инвайтов дома, включая отозванные и исчерпанные. Доступно owner и admin",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Список инвайтов",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список инвайтов",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/households_transport_http.InviteDTOResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - role can't view invites",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Сгенерировать код приглашения в дом (срок жизни 7 дней). Доступно owner и admin",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Создать инвайт",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "CreateInvite тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/households_service.CreateInviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Инвайт создан",
+                        "schema": {
+                            "$ref": "#/definitions/households_transport_http.InviteDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - role can't create invites",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/{id}/invites/{invite_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Отозвать инвайт-код, дальше по нему нельзя присоединиться. Доступно owner и admin",
+                "tags": [
+                    "households"
+                ],
+                "summary": "Отозвать инвайт",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID инвайта",
+                        "name": "invite_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Инвайт отозван"
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - role can't revoke invites",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household, member, or invite not found",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/{id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получить список участников дома с ролями. Доступно любому участнику",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Список участников дома",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список участников",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/households_transport_http.MemberDTOResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/{id}/members/{user_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Удаляет участника из дома. Если user_id совпадает с вызывающим - выход из дома (владелец сначала должен передать владение). admin может убрать только member, owner - любого",
+                "tags": [
+                    "households"
+                ],
+                "summary": "Убрать участника / выйти из дома",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Участник удалён"
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - insufficient role to remove this member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household or member not found",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Sole owner must transfer ownership or delete household first",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Меняет роль участника на admin/member, либо (role=owner) атомарно передаёт владение домом. Доступно только owner, нельзя применить к себе",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "households"
+                ],
+                "summary": "Сменить роль участника / передать владение",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "ChangeMemberRole тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/households_service.ChangeMemberRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Роль изменена"
+                    },
+                    "400": {
+                        "description": "Bad request - can't target self",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - only owner can change roles",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Ownership transfer conflict",
                         "schema": {
                             "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
                         }
@@ -505,10 +1280,12 @@ const docTemplate = `{
         },
         "/users/me": {
             "get": {
-                "description": "Получить информацио о пользователе",
-                "consumes": [
-                    "application/json"
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
                 ],
+                "description": "Получить информацию о текущем пользователе",
                 "produces": [
                     "application/json"
                 ],
@@ -520,11 +1297,17 @@ const docTemplate = `{
                     "200": {
                         "description": "Пользователь получен",
                         "schema": {
-                            "$ref": "#/definitions/users_transport_http.GetMeResponse"
+                            "$ref": "#/definitions/users_transport_http.UserDTOResponse"
                         }
                     },
-                    "400": {
-                        "description": "Bad request",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
                         "schema": {
                             "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
                         }
@@ -538,23 +1321,22 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Удалить пользователя из системы",
-                "consumes": [
-                    "application/json"
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
                 ],
-                "produces": [
-                    "application/json"
-                ],
+                "description": "Удалить текущего пользователя из системы",
                 "tags": [
                     "users"
                 ],
                 "summary": "Удалить пользователя",
                 "responses": {
                     "204": {
-                        "description": "Пользователь удален"
+                        "description": "Пользователь удалён"
                     },
-                    "400": {
-                        "description": "Bad request",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
                         }
@@ -568,7 +1350,12 @@ const docTemplate = `{
                 }
             },
             "patch": {
-                "description": "Обновить информацио о пользователе",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Частично обновить информацию о текущем пользователе",
                 "consumes": [
                     "application/json"
                 ],
@@ -592,13 +1379,25 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Пользователь обновлен",
+                        "description": "Пользователь обновлён",
                         "schema": {
-                            "$ref": "#/definitions/core_domain.UserPatch"
+                            "$ref": "#/definitions/users_transport_http.PatchUserResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Version conflict",
                         "schema": {
                             "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
                         }
@@ -719,48 +1518,6 @@ const docTemplate = `{
                 }
             }
         },
-        "core_domain.Nullable-int": {
-            "type": "object",
-            "properties": {
-                "set": {
-                    "type": "boolean"
-                },
-                "value": {
-                    "type": "integer"
-                }
-            }
-        },
-        "core_domain.Nullable-string": {
-            "type": "object",
-            "properties": {
-                "set": {
-                    "type": "boolean"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "core_domain.UserPatch": {
-            "type": "object",
-            "properties": {
-                "age": {
-                    "$ref": "#/definitions/core_domain.Nullable-int"
-                },
-                "email": {
-                    "$ref": "#/definitions/core_domain.Nullable-string"
-                },
-                "firstName": {
-                    "$ref": "#/definitions/core_domain.Nullable-string"
-                },
-                "lastName": {
-                    "$ref": "#/definitions/core_domain.Nullable-string"
-                },
-                "password": {
-                    "$ref": "#/definitions/core_domain.Nullable-string"
-                }
-            }
-        },
         "core_transport_http_response.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -771,6 +1528,129 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "short msg"
+                }
+            }
+        },
+        "households_service.ChangeMemberRoleRequest": {
+            "type": "object",
+            "required": [
+                "role"
+            ],
+            "properties": {
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "owner",
+                        "admin",
+                        "member"
+                    ]
+                }
+            }
+        },
+        "households_service.CreateHouseholdRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                }
+            }
+        },
+        "households_service.CreateInviteRequest": {
+            "type": "object",
+            "properties": {
+                "max_uses": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "households_service.RenameHouseholdRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                }
+            }
+        },
+        "households_transport_http.HouseholdDTOResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "households_transport_http.InviteDTOResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "expires_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "max_uses": {
+                    "type": "integer"
+                },
+                "revoked_at": {
+                    "type": "string"
+                },
+                "use_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "households_transport_http.MemberDTOResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "joined_at": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
@@ -832,7 +1712,10 @@ const docTemplate = `{
                 }
             }
         },
-        "users_transport_http.GetMeResponse": {
+        "users_transport_http.PatchUserRequest": {
+            "type": "object"
+        },
+        "users_transport_http.PatchUserResponse": {
             "type": "object",
             "properties": {
                 "age": {
@@ -861,8 +1744,34 @@ const docTemplate = `{
                 }
             }
         },
-        "users_transport_http.PatchUserRequest": {
-            "type": "object"
+        "users_transport_http.UserDTOResponse": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
         }
     }
 }`
