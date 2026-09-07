@@ -10,6 +10,16 @@ import (
 
 type GetMeResponse UserDTOResponse
 
+// GetMe godoc
+// @Summary Получить пользователя
+// @Description Получить информацио о пользователе
+// @Tags users
+// @Accept json
+// @Produce json
+// @Success 201 {object} GetMeResponse "Пользователь получен"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /users/me [get]
 func (h *UsersHTTPHandler) GetMe(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

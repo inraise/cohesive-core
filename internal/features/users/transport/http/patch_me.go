@@ -80,6 +80,17 @@ func (r *PatchUserRequest) Validate() error {
 
 type PatchUserResponse UserDTOResponse
 
+// PatchMe godoc
+// @Summary Обновить пользователя
+// @Description Обновить информацио о пользователе
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body PatchUserRequest true "PatchMe тело запроса"
+// @Success 201 {object} core_domain.UserPatch "Пользователь обновлен"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /users/me [patch]
 func (h *UsersHTTPHandler) PatchMe(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

@@ -25,7 +25,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Авторизация пользователя",
                 "parameters": [
@@ -71,7 +71,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Выход пользователя",
                 "parameters": [
@@ -114,7 +114,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Обновление токена",
                 "parameters": [
@@ -160,7 +160,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Создать пользователя",
                 "parameters": [
@@ -179,6 +179,115 @@ const docTemplate = `{
                         "description": "Успешно созданный пользователь",
                         "schema": {
                             "$ref": "#/definitions/auth_transport_http.CreateUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me": {
+            "get": {
+                "description": "Получить информацио о пользователе",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Получить пользователя",
+                "responses": {
+                    "201": {
+                        "description": "Пользователь получен",
+                        "schema": {
+                            "$ref": "#/definitions/users_transport_http.GetMeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удалить пользователя из системы",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Удалить пользователя",
+                "responses": {
+                    "201": {
+                        "description": "Пользователь удален"
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Обновить информацио о пользователе",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Обновить пользователя",
+                "parameters": [
+                    {
+                        "description": "PatchMe тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users_transport_http.PatchUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Пользователь обновлен",
+                        "schema": {
+                            "$ref": "#/definitions/core_domain.UserPatch"
                         }
                     },
                     "400": {
@@ -303,6 +412,48 @@ const docTemplate = `{
                 }
             }
         },
+        "core_domain.Nullable-int": {
+            "type": "object",
+            "properties": {
+                "set": {
+                    "type": "boolean"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "core_domain.Nullable-string": {
+            "type": "object",
+            "properties": {
+                "set": {
+                    "type": "boolean"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "core_domain.UserPatch": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "$ref": "#/definitions/core_domain.Nullable-int"
+                },
+                "email": {
+                    "$ref": "#/definitions/core_domain.Nullable-string"
+                },
+                "firstName": {
+                    "$ref": "#/definitions/core_domain.Nullable-string"
+                },
+                "lastName": {
+                    "$ref": "#/definitions/core_domain.Nullable-string"
+                },
+                "password": {
+                    "$ref": "#/definitions/core_domain.Nullable-string"
+                }
+            }
+        },
         "core_transport_http_response.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -315,6 +466,38 @@ const docTemplate = `{
                     "example": "short msg"
                 }
             }
+        },
+        "users_transport_http.GetMeResponse": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "users_transport_http.PatchUserRequest": {
+            "type": "object"
         }
     }
 }`

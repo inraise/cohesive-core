@@ -8,6 +8,16 @@ import (
 	"net/http"
 )
 
+// DeleteMe godoc
+// @Summary Удалить пользователя
+// @Description Удалить пользователя из системы
+// @Tags users
+// @Accept json
+// @Produce json
+// @Success 201 "Пользователь удален"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /users/me [delete]
 func (h *UsersHTTPHandler) DeleteMe(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

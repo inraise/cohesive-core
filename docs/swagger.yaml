@@ -72,6 +72,33 @@ definitions:
       refresh_token:
         type: string
     type: object
+  core_domain.Nullable-int:
+    properties:
+      set:
+        type: boolean
+      value:
+        type: integer
+    type: object
+  core_domain.Nullable-string:
+    properties:
+      set:
+        type: boolean
+      value:
+        type: string
+    type: object
+  core_domain.UserPatch:
+    properties:
+      age:
+        $ref: '#/definitions/core_domain.Nullable-int'
+      email:
+        $ref: '#/definitions/core_domain.Nullable-string'
+      firstName:
+        $ref: '#/definitions/core_domain.Nullable-string'
+      lastName:
+        $ref: '#/definitions/core_domain.Nullable-string'
+      password:
+        $ref: '#/definitions/core_domain.Nullable-string'
+    type: object
   core_transport_http_response.ErrorResponse:
     properties:
       error:
@@ -80,6 +107,27 @@ definitions:
       message:
         example: short msg
         type: string
+    type: object
+  users_transport_http.GetMeResponse:
+    properties:
+      age:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  users_transport_http.PatchUserRequest:
     type: object
 host: 127.0.0.1:5050
 info:
@@ -117,7 +165,7 @@ paths:
             $ref: '#/definitions/core_transport_http_response.ErrorResponse'
       summary: Авторизация пользователя
       tags:
-      - users
+      - auth
   /auth/logout:
     post:
       consumes:
@@ -145,7 +193,7 @@ paths:
             $ref: '#/definitions/core_transport_http_response.ErrorResponse'
       summary: Выход пользователя
       tags:
-      - users
+      - auth
   /auth/refresh:
     post:
       consumes:
@@ -175,7 +223,7 @@ paths:
             $ref: '#/definitions/core_transport_http_response.ErrorResponse'
       summary: Обновление токена
       tags:
-      - users
+      - auth
   /auth/register:
     post:
       consumes:
@@ -204,6 +252,78 @@ paths:
           schema:
             $ref: '#/definitions/core_transport_http_response.ErrorResponse'
       summary: Создать пользователя
+      tags:
+      - auth
+  /users/me:
+    delete:
+      consumes:
+      - application/json
+      description: Удалить пользователя из системы
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь удален
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Удалить пользователя
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Получить информацио о пользователе
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь получен
+          schema:
+            $ref: '#/definitions/users_transport_http.GetMeResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Получить пользователя
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Обновить информацио о пользователе
+      parameters:
+      - description: PatchMe тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users_transport_http.PatchUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь обновлен
+          schema:
+            $ref: '#/definitions/core_domain.UserPatch'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Обновить пользователя
       tags:
       - users
 swagger: "2.0"
