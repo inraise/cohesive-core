@@ -10,12 +10,11 @@ import (
 
 // DeleteMe godoc
 // @Summary Удалить пользователя
-// @Description Удалить пользователя из системы
+// @Description Удалить текущего пользователя из системы
 // @Tags users
-// @Accept json
-// @Produce json
-// @Success 204 "Пользователь удален"
-// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Security ApiKeyAuth
+// @Success 204 "Пользователь удалён"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /users/me [delete]
 func (h *UsersHTTPHandler) DeleteMe(rw http.ResponseWriter, r *http.Request) {

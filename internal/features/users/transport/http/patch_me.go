@@ -82,13 +82,16 @@ type PatchUserResponse UserDTOResponse
 
 // PatchMe godoc
 // @Summary Обновить пользователя
-// @Description Обновить информацио о пользователе
+// @Description Частично обновить информацию о текущем пользователе
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security ApiKeyAuth
 // @Param request body PatchUserRequest true "PatchMe тело запроса"
-// @Success 200 {object} core_domain.UserPatch "Пользователь обновлен"
+// @Success 200 {object} PatchUserResponse "Пользователь обновлён"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 409 {object} core_transport_http_response.ErrorResponse "Version conflict"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /users/me [patch]
 func (h *UsersHTTPHandler) PatchMe(rw http.ResponseWriter, r *http.Request) {

@@ -24,13 +24,15 @@ func (r *RefreshTokenRequest) Validate() error {
 
 // RefreshToken godoc
 // @Summary Обновление токена
-// @Description Обновление токена авторизированного пользователя
+// @Description Обновление токена авторизованного пользователя
 // @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body RefreshTokenRequest true "RefreshToken тело запроса"
-// @Success 200 {object} auth_service.LoginDTOResponse "Токен успешно обновлен"
+// @Success 200 {object} auth_service.LoginDTOResponse "Токен успешно обновлён"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Invalid or expired refresh token"
+// @Failure 429 {object} core_transport_http_response.ErrorResponse "Too many requests"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /auth/refresh [post]
 func (h *AuthHTTPHandler) RefreshToken(rw http.ResponseWriter, r *http.Request) {
