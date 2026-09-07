@@ -29,7 +29,7 @@ func (r *RefreshTokenRequest) Validate() error {
 // @Accept json
 // @Produce json
 // @Param request body RefreshTokenRequest true "RefreshToken тело запроса"
-// @Success 201 {object} auth_service.LoginDTOResponse "Токен успешно обновлен"
+// @Success 200 {object} auth_service.LoginDTOResponse "Токен успешно обновлен"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /auth/refresh [post]

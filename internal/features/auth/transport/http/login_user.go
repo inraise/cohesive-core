@@ -30,7 +30,7 @@ func (r *LoginRequest) Validate() error {
 // @Accept json
 // @Produce json
 // @Param request body LoginRequest true "LoginUser тело запроса"
-// @Success 201 {object} auth_service.LoginDTOResponse "Успешная авторизация"
+// @Success 200 {object} auth_service.LoginDTOResponse "Успешная авторизация"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /auth/login [post]

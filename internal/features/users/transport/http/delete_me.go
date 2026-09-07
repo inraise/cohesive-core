@@ -14,7 +14,7 @@ import (
 // @Tags users
 // @Accept json
 // @Produce json
-// @Success 201 "Пользователь удален"
+// @Success 204 "Пользователь удален"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /users/me [delete]

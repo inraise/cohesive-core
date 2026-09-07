@@ -27,7 +27,7 @@ func (r *LogoutRequest) Validate() error {
 // @Accept json
 // @Produce json
 // @Param request body LogoutRequest true "LogoutUser тело запроса"
-// @Success 201 "Успешный выход"
+// @Success 200 "Успешный выход"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /auth/logout [post]

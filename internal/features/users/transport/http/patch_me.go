@@ -87,7 +87,7 @@ type PatchUserResponse UserDTOResponse
 // @Accept json
 // @Produce json
 // @Param request body PatchUserRequest true "PatchMe тело запроса"
-// @Success 201 {object} core_domain.UserPatch "Пользователь обновлен"
+// @Success 200 {object} core_domain.UserPatch "Пользователь обновлен"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /users/me [patch]

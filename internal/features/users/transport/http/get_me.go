@@ -16,7 +16,7 @@ type GetMeResponse UserDTOResponse
 // @Tags users
 // @Accept json
 // @Produce json
-// @Success 201 {object} GetMeResponse "Пользователь получен"
+// @Success 200 {object} GetMeResponse "Пользователь получен"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /users/me [get]
