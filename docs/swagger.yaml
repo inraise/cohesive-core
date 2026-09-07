@@ -108,6 +108,45 @@ definitions:
         example: short msg
         type: string
     type: object
+  tasks_service.CreateTaskRequest:
+    properties:
+      assigned_to:
+        type: string
+      description:
+        maxLength: 2000
+        type: string
+      title:
+        maxLength: 200
+        minLength: 1
+        type: string
+    required:
+    - title
+    type: object
+  tasks_transport_http.PatchTaskRequest:
+    type: object
+  tasks_transport_http.TaskDTOResponse:
+    properties:
+      assigned_to:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      household_id:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
   users_transport_http.GetMeResponse:
     properties:
       age:
@@ -151,7 +190,7 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        "200":
           description: Успешная авторизация
           schema:
             $ref: '#/definitions/auth_service.LoginDTOResponse'
@@ -181,7 +220,7 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        "200":
           description: Успешный выход
         "400":
           description: Bad request
@@ -209,7 +248,7 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        "200":
           description: Токен успешно обновлен
           schema:
             $ref: '#/definitions/auth_service.LoginDTOResponse'
@@ -254,6 +293,211 @@ paths:
       summary: Создать пользователя
       tags:
       - auth
+  /households/{id}/tasks:
+    get:
+      description: Получить список задач дома
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список задач
+          schema:
+            items:
+              $ref: '#/definitions/tasks_transport_http.TaskDTOResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Список задач
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Создать новую задачу в доме
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: CreateTask тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/tasks_service.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Задача создана
+          schema:
+            $ref: '#/definitions/tasks_transport_http.TaskDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Создать задачу
+      tags:
+      - tasks
+  /households/{id}/tasks/{task_id}:
+    delete:
+      description: Удалить задачу по ID
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID задачи
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Задача удалена
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Удалить задачу
+      tags:
+      - tasks
+    get:
+      description: Получить задачу по ID
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID задачи
+        in: path
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Задача
+          schema:
+            $ref: '#/definitions/tasks_transport_http.TaskDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Получить задачу
+      tags:
+      - tasks
+    patch:
+      consumes:
+      - application/json
+      description: Частично обновить задачу (title, description, status, assigned_to)
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID задачи
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: PatchTask тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/tasks_transport_http.PatchTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Задача обновлена
+          schema:
+            $ref: '#/definitions/tasks_transport_http.TaskDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "409":
+          description: Version conflict
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Обновить задачу
+      tags:
+      - tasks
   /users/me:
     delete:
       consumes:
@@ -262,7 +506,7 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        "204":
           description: Пользователь удален
         "400":
           description: Bad request
@@ -282,7 +526,7 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        "200":
           description: Пользователь получен
           schema:
             $ref: '#/definitions/users_transport_http.GetMeResponse'
@@ -311,7 +555,7 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        "200":
           description: Пользователь обновлен
           schema:
             $ref: '#/definitions/core_domain.UserPatch'

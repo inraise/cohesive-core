@@ -48,6 +48,22 @@ func (r *PatchTaskRequest) Validate() error {
 	return nil
 }
 
+// PatchTask godoc
+// @Summary Обновить задачу
+// @Description Частично обновить задачу (title, description, status, assigned_to)
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path string true "ID дома"
+// @Param task_id path string true "ID задачи"
+// @Param request body tasks_transport_http.PatchTaskRequest true "PatchTask тело запроса"
+// @Success 200 {object} tasks_transport_http.TaskDTOResponse "Задача обновлена"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Task not found"
+// @Failure 409 {object} core_transport_http_response.ErrorResponse "Version conflict"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/tasks/{task_id} [patch]
 func (h *TasksHTTPHandler) PatchTask(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
