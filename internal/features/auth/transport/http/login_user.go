@@ -26,7 +26,7 @@ func (r *LoginRequest) Validate() error {
 // LoginUser godoc
 // @Summary Авторизация пользователя
 // @Description Авторизация пользователя в системе
-// @Tags users
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body LoginRequest true "LoginUser тело запроса"

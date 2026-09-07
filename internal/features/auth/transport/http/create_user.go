@@ -13,7 +13,7 @@ type CreateUserResponse UserDTOResponse
 // CreateUser godoc
 // @Summary Создать пользователя
 // @Description Создать нового пользователя в системе
-// @Tags users
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body auth_service.CreateUserRequest true "CreateUser тело запроса"

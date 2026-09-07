@@ -25,7 +25,7 @@ func (r *RefreshTokenRequest) Validate() error {
 // RefreshToken godoc
 // @Summary Обновление токена
 // @Description Обновление токена авторизированного пользователя
-// @Tags users
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body RefreshTokenRequest true "RefreshToken тело запроса"

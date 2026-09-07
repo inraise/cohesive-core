@@ -23,7 +23,7 @@ func (r *LogoutRequest) Validate() error {
 // LogoutUser godoc
 // @Summary Выход пользователя
 // @Description Выход пользователя из системы
-// @Tags users
+// @Tags auth
 // @Accept json
 // @Produce json
 // @Param request body LogoutRequest true "LogoutUser тело запроса"
