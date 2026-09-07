@@ -81,4 +81,7 @@ cohesive-undeploy:
 
 ps:
 	@docker compose ps
+
+refresh-swag:
+	@swag init -g cmd/cohesive/main.go -o ./docs
 	
