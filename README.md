@@ -130,8 +130,6 @@ make cohesive-run           # 4. запустить приложение лок�
 | `TIME_ZONE`             |             | `UTC`        | Тайм-зона приложения                   |
 
 > `make cohesive-run` подставляет `LOGGER_FOLDER`/`POSTGRES_HOST` автоматически.
->
-> ⚠️ `docker-compose.yaml`: сервис `cohesive` не пробрасывает `REDIS_*` в контейнер (только Postgres) — для `make cohesive-deploy` добавь `REDIS_ADDR=cohesive-redis:6379` и остальные `REDIS_*` в `environment:`.
 
 ---
 
