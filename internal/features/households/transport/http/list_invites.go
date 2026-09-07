@@ -13,6 +13,20 @@ import (
 
 type ListInvitesResponse []InviteDTOResponse
 
+// ListInvites godoc
+// @Summary Список инвайтов
+// @Description Получить список инвайтов дома, включая отозванные и исчерпанные. Доступно owner и admin
+// @Tags households
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Success 200 {array} households_transport_http.InviteDTOResponse "Список инвайтов"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Forbidden - role can't view invites"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household not found or not a member"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/invites [get]
 func (h *HouseholdsHTTPHandler) ListInvites(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

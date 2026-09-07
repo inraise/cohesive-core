@@ -13,6 +13,22 @@ import (
 	"github.com/google/uuid"
 )
 
+// CreateInvite godoc
+// @Summary Создать инвайт
+// @Description Сгенерировать код приглашения в дом (срок жизни 7 дней). Доступно owner и admin
+// @Tags households
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param request body households_service.CreateInviteRequest true "CreateInvite тело запроса"
+// @Success 201 {object} households_transport_http.InviteDTOResponse "Инвайт создан"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Forbidden - role can't create invites"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household not found or not a member"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/invites [post]
 func (h *HouseholdsHTTPHandler) CreateInvite(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

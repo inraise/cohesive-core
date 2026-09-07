@@ -11,6 +11,21 @@ import (
 	"github.com/google/uuid"
 )
 
+// RemoveMember godoc
+// @Summary Убрать участника / выйти из дома
+// @Description Удаляет участника из дома. Если user_id совпадает с вызывающим - выход из дома (владелец сначала должен передать владение). admin может убрать только member, owner - любого
+// @Tags households
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param user_id path string true "ID пользователя"
+// @Success 204 "Участник удалён"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Forbidden - insufficient role to remove this member"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household or member not found"
+// @Failure 409 {object} core_transport_http_response.ErrorResponse "Sole owner must transfer ownership or delete household first"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/members/{user_id} [delete]
 func (h *HouseholdsHTTPHandler) RemoveMember(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

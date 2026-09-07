@@ -13,6 +13,19 @@ import (
 
 type CreateHouseholdResponse HouseholdDTOResponse
 
+// CreateHousehold godoc
+// @Summary Создать дом
+// @Description Создать новый дом, создатель становится владельцем (owner)
+// @Tags households
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param request body households_service.CreateHouseholdRequest true "CreateHousehold тело запроса"
+// @Success 201 {object} households_transport_http.HouseholdDTOResponse "Дом создан"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households [post]
 func (h *HouseholdsHTTPHandler) CreateHousehold(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

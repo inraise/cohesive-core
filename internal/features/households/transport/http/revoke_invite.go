@@ -11,6 +11,20 @@ import (
 	"github.com/google/uuid"
 )
 
+// RevokeInvite godoc
+// @Summary Отозвать инвайт
+// @Description Отозвать инвайт-код, дальше по нему нельзя присоединиться. Доступно owner и admin
+// @Tags households
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param invite_id path string true "ID инвайта"
+// @Success 204 "Инвайт отозван"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Forbidden - role can't revoke invites"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household, member, or invite not found"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/invites/{invite_id} [delete]
 func (h *HouseholdsHTTPHandler) RevokeInvite(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

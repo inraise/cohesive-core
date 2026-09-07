@@ -9,6 +9,18 @@ import (
 	"net/http"
 )
 
+// AcceptInvite godoc
+// @Summary Принять инвайт
+// @Description Присоединиться к дому по коду приглашения, становится member. Не требует предварительного членства в доме - только валидный access-токен
+// @Tags households
+// @Produce json
+// @Security ApiKeyAuth
+// @Param code path string true "Код приглашения"
+// @Success 200 {object} households_transport_http.HouseholdDTOResponse "Приглашение принято"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Invite is invalid, expired, exhausted, or already accepted"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/invites/{code}/accept [post]
 func (h *HouseholdsHTTPHandler) AcceptInvite(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

@@ -11,6 +11,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// DeleteHousehold godoc
+// @Summary Удалить дом
+// @Description Безвозвратно удалить дом целиком (каскадом удаляются участники, инвайты и задачи). Доступно только owner
+// @Tags households
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Success 204 "Дом удалён"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Forbidden - only owner can delete household"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household not found or not a member"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id} [delete]
 func (h *HouseholdsHTTPHandler) DeleteHousehold(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

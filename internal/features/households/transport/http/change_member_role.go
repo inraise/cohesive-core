@@ -13,6 +13,23 @@ import (
 	"github.com/google/uuid"
 )
 
+// ChangeMemberRole godoc
+// @Summary Сменить роль участника / передать владение
+// @Description Меняет роль участника на admin/member, либо (role=owner) атомарно передаёт владение домом. Доступно только owner, нельзя применить к себе
+// @Tags households
+// @Accept json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param user_id path string true "ID пользователя"
+// @Param request body households_service.ChangeMemberRoleRequest true "ChangeMemberRole тело запроса"
+// @Success 204 "Роль изменена"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request - can't target self"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Forbidden - only owner can change roles"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household not found or not a member"
+// @Failure 409 {object} core_transport_http_response.ErrorResponse "Ownership transfer conflict"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/members/{user_id} [patch]
 func (h *HouseholdsHTTPHandler) ChangeMemberRole(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
