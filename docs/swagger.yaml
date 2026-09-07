@@ -1,9 +1,209 @@
 basePath: /api/v1
+definitions:
+  auth_service.CreateUserRequest:
+    properties:
+      age:
+        maximum: 130
+        minimum: 0
+        type: integer
+      email:
+        maxLength: 100
+        minLength: 5
+        type: string
+      first_name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      last_name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      password:
+        maxLength: 100
+        minLength: 10
+        type: string
+    required:
+    - email
+    - first_name
+    - password
+    type: object
+  auth_service.LoginDTOResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  auth_transport_http.CreateUserResponse:
+    properties:
+      age:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  auth_transport_http.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  auth_transport_http.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  auth_transport_http.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  core_transport_http_response.ErrorResponse:
+    properties:
+      error:
+        example: full error text
+        type: string
+      message:
+        example: short msg
+        type: string
+    type: object
 host: 127.0.0.1:5050
 info:
   contact: {}
   description: Cohesive Application REST-API scheme
   title: Cohesive-Core
   version: "0.1"
-paths: {}
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Авторизация пользователя в системе
+      parameters:
+      - description: LoginUser тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_transport_http.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешная авторизация
+          schema:
+            $ref: '#/definitions/auth_service.LoginDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Авторизация пользователя
+      tags:
+      - users
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Выход пользователя из системы
+      parameters:
+      - description: LogoutUser тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_transport_http.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешный выход
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Выход пользователя
+      tags:
+      - users
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Обновление токена авторизированного пользователя
+      parameters:
+      - description: RefreshToken тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_transport_http.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Токен успешно обновлен
+          schema:
+            $ref: '#/definitions/auth_service.LoginDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Обновление токена
+      tags:
+      - users
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создать нового пользователя в системе
+      parameters:
+      - description: CreateUser тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_service.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешно созданный пользователь
+          schema:
+            $ref: '#/definitions/auth_transport_http.CreateUserResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Создать пользователя
+      tags:
+      - users
 swagger: "2.0"
