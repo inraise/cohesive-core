@@ -1,0 +1,12 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Cohesive Application REST-API scheme",
+        "title": "Cohesive-Core",
+        "contact": {},
+        "version": "0.1"
+    },
+    "host": "127.0.0.1:5050",
+    "basePath": "/api/v1",
+    "paths": {}
+}
