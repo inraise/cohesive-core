@@ -75,5 +75,29 @@ func (h *TasksHTTPHandler) Routes() []core_transport_http_server.Route {
 			Handler:    h.CreateTask,
 			Middleware: withAuth,
 		},
+		{
+			Method:     http.MethodGet,
+			Path:       "/households/{id}/tasks",
+			Handler:    h.ListTasks,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodGet,
+			Path:       "/households/{id}/tasks/{task_id}",
+			Handler:    h.GetTask,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodPatch,
+			Path:       "/households/{id}/tasks/{task_id}",
+			Handler:    h.PatchTask,
+			Middleware: withAuth,
+		},
+		{
+			Method:     http.MethodDelete,
+			Path:       "/households/{id}/tasks/{task_id}",
+			Handler:    h.DeleteTask,
+			Middleware: withAuth,
+		},
 	}
 }

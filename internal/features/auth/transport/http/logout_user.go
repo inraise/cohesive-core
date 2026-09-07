@@ -20,6 +20,16 @@ func (r *LogoutRequest) Validate() error {
 	return nil
 }
 
+// LogoutUser godoc
+// @Summary Выход пользователя
+// @Description Выход пользователя из системы
+// @Tags auth
+// @Accept json
+// @Param request body LogoutRequest true "LogoutUser тело запроса"
+// @Success 204 "Успешный выход"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /auth/logout [post]
 func (h *AuthHTTPHandler) LogoutUser(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

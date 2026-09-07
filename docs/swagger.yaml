@@ -1,0 +1,1167 @@
+basePath: /api/v1
+definitions:
+  auth_service.CreateUserRequest:
+    properties:
+      age:
+        maximum: 130
+        minimum: 0
+        type: integer
+      email:
+        maxLength: 100
+        minLength: 5
+        type: string
+      first_name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      last_name:
+        maxLength: 100
+        minLength: 3
+        type: string
+      password:
+        maxLength: 100
+        minLength: 10
+        type: string
+    required:
+    - email
+    - first_name
+    - password
+    type: object
+  auth_service.LoginDTOResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  auth_transport_http.CreateUserResponse:
+    properties:
+      age:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  auth_transport_http.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  auth_transport_http.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  auth_transport_http.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  core_transport_http_response.ErrorResponse:
+    properties:
+      error:
+        example: full error text
+        type: string
+      message:
+        example: short msg
+        type: string
+    type: object
+  households_service.ChangeMemberRoleRequest:
+    properties:
+      role:
+        enum:
+        - owner
+        - admin
+        - member
+        type: string
+    required:
+    - role
+    type: object
+  households_service.CreateHouseholdRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  households_service.CreateInviteRequest:
+    properties:
+      max_uses:
+        minimum: 1
+        type: integer
+    type: object
+  households_service.RenameHouseholdRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  households_transport_http.HouseholdDTOResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  households_transport_http.InviteDTOResponse:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      max_uses:
+        type: integer
+      revoked_at:
+        type: string
+      use_count:
+        type: integer
+    type: object
+  households_transport_http.MemberDTOResponse:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      joined_at:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+      user_id:
+        type: string
+    type: object
+  tasks_service.CreateTaskRequest:
+    properties:
+      assigned_to:
+        type: string
+      description:
+        maxLength: 2000
+        type: string
+      title:
+        maxLength: 200
+        minLength: 1
+        type: string
+    required:
+    - title
+    type: object
+  tasks_transport_http.PatchTaskRequest:
+    type: object
+  tasks_transport_http.TaskDTOResponse:
+    properties:
+      assigned_to:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      description:
+        type: string
+      household_id:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  users_transport_http.PatchUserRequest:
+    type: object
+  users_transport_http.PatchUserResponse:
+    properties:
+      age:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  users_transport_http.UserDTOResponse:
+    properties:
+      age:
+        type: integer
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+host: 127.0.0.1:5050
+info:
+  contact: {}
+  description: Cohesive Application REST-API scheme
+  title: Cohesive-Core
+  version: "0.1"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Авторизация пользователя в системе
+      parameters:
+      - description: LoginUser тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_transport_http.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешная авторизация
+          schema:
+            $ref: '#/definitions/auth_service.LoginDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "429":
+          description: Too many requests
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Авторизация пользователя
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Выход пользователя из системы
+      parameters:
+      - description: LogoutUser тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_transport_http.LogoutRequest'
+      responses:
+        "204":
+          description: Успешный выход
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Выход пользователя
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Обновление токена авторизованного пользователя
+      parameters:
+      - description: RefreshToken тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_transport_http.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Токен успешно обновлён
+          schema:
+            $ref: '#/definitions/auth_service.LoginDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "429":
+          description: Too many requests
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Обновление токена
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создать нового пользователя в системе
+      parameters:
+      - description: CreateUser тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_service.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешно созданный пользователь
+          schema:
+            $ref: '#/definitions/auth_transport_http.CreateUserResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Создать пользователя
+      tags:
+      - auth
+  /households:
+    get:
+      description: Получить список домов, в которых состоит текущий пользователь,
+        с ролью в каждом
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список домов
+          schema:
+            items:
+              $ref: '#/definitions/households_transport_http.HouseholdDTOResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Список моих домов
+      tags:
+      - households
+    post:
+      consumes:
+      - application/json
+      description: Создать новый дом, создатель становится владельцем (owner)
+      parameters:
+      - description: CreateHousehold тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/households_service.CreateHouseholdRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Дом создан
+          schema:
+            $ref: '#/definitions/households_transport_http.HouseholdDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Создать дом
+      tags:
+      - households
+  /households/{id}:
+    delete:
+      description: Безвозвратно удалить дом целиком (каскадом удаляются участники,
+        инвайты и задачи). Доступно только owner
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Дом удалён
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden - only owner can delete household
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить дом
+      tags:
+      - households
+    get:
+      description: Получить карточку дома. Доступно только участнику дома
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Дом
+          schema:
+            $ref: '#/definitions/households_transport_http.HouseholdDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Получить дом
+      tags:
+      - households
+    patch:
+      consumes:
+      - application/json
+      description: Изменить название дома. Доступно owner и admin
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: RenameHousehold тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/households_service.RenameHouseholdRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Дом переименован
+          schema:
+            $ref: '#/definitions/households_transport_http.HouseholdDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden - role can't rename household
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "409":
+          description: Version conflict
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Переименовать дом
+      tags:
+      - households
+  /households/{id}/invites:
+    get:
+      description: Получить список инвайтов дома, включая отозванные и исчерпанные.
+        Доступно owner и admin
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список инвайтов
+          schema:
+            items:
+              $ref: '#/definitions/households_transport_http.InviteDTOResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden - role can't view invites
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Список инвайтов
+      tags:
+      - households
+    post:
+      consumes:
+      - application/json
+      description: Сгенерировать код приглашения в дом (срок жизни 7 дней). Доступно
+        owner и admin
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: CreateInvite тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/households_service.CreateInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Инвайт создан
+          schema:
+            $ref: '#/definitions/households_transport_http.InviteDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden - role can't create invites
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Создать инвайт
+      tags:
+      - households
+  /households/{id}/invites/{invite_id}:
+    delete:
+      description: Отозвать инвайт-код, дальше по нему нельзя присоединиться. Доступно
+        owner и admin
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID инвайта
+        in: path
+        name: invite_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Инвайт отозван
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden - role can't revoke invites
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household, member, or invite not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Отозвать инвайт
+      tags:
+      - households
+  /households/{id}/members:
+    get:
+      description: Получить список участников дома с ролями. Доступно любому участнику
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список участников
+          schema:
+            items:
+              $ref: '#/definitions/households_transport_http.MemberDTOResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Список участников дома
+      tags:
+      - households
+  /households/{id}/members/{user_id}:
+    delete:
+      description: Удаляет участника из дома. Если user_id совпадает с вызывающим
+        - выход из дома (владелец сначала должен передать владение). admin может убрать
+        только member, owner - любого
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID пользователя
+        in: path
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Участник удалён
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden - insufficient role to remove this member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household or member not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "409":
+          description: Sole owner must transfer ownership or delete household first
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Убрать участника / выйти из дома
+      tags:
+      - households
+    patch:
+      consumes:
+      - application/json
+      description: Меняет роль участника на admin/member, либо (role=owner) атомарно
+        передаёт владение домом. Доступно только owner, нельзя применить к себе
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID пользователя
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: ChangeMemberRole тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/households_service.ChangeMemberRoleRequest'
+      responses:
+        "204":
+          description: Роль изменена
+        "400":
+          description: Bad request - can't target self
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "403":
+          description: Forbidden - only owner can change roles
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "409":
+          description: Ownership transfer conflict
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Сменить роль участника / передать владение
+      tags:
+      - households
+  /households/{id}/tasks:
+    get:
+      description: Получить список задач дома
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список задач
+          schema:
+            items:
+              $ref: '#/definitions/tasks_transport_http.TaskDTOResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Список задач
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Создать новую задачу в доме
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: CreateTask тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/tasks_service.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Задача создана
+          schema:
+            $ref: '#/definitions/tasks_transport_http.TaskDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Создать задачу
+      tags:
+      - tasks
+  /households/{id}/tasks/{task_id}:
+    delete:
+      description: Удалить задачу по ID
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID задачи
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Задача удалена
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Удалить задачу
+      tags:
+      - tasks
+    get:
+      description: Получить задачу по ID
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID задачи
+        in: path
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Задача
+          schema:
+            $ref: '#/definitions/tasks_transport_http.TaskDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Получить задачу
+      tags:
+      - tasks
+    patch:
+      consumes:
+      - application/json
+      description: Частично обновить задачу (title, description, status, assigned_to)
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID задачи
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: PatchTask тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/tasks_transport_http.PatchTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Задача обновлена
+          schema:
+            $ref: '#/definitions/tasks_transport_http.TaskDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "409":
+          description: Version conflict
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      summary: Обновить задачу
+      tags:
+      - tasks
+  /households/invites/{code}/accept:
+    post:
+      description: Присоединиться к дому по коду приглашения, становится member. Не
+        требует предварительного членства в доме - только валидный access-токен
+      parameters:
+      - description: Код приглашения
+        in: path
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Приглашение принято
+          schema:
+            $ref: '#/definitions/households_transport_http.HouseholdDTOResponse'
+        "400":
+          description: Invite is invalid, expired, exhausted, or already accepted
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Принять инвайт
+      tags:
+      - households
+  /users/me:
+    delete:
+      description: Удалить текущего пользователя из системы
+      responses:
+        "204":
+          description: Пользователь удалён
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить пользователя
+      tags:
+      - users
+    get:
+      description: Получить информацию о текущем пользователе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь получен
+          schema:
+            $ref: '#/definitions/users_transport_http.UserDTOResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Получить пользователя
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Частично обновить информацию о текущем пользователе
+      parameters:
+      - description: PatchMe тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users_transport_http.PatchUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь обновлён
+          schema:
+            $ref: '#/definitions/users_transport_http.PatchUserResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "409":
+          description: Version conflict
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Обновить пользователя
+      tags:
+      - users
+swagger: "2.0"

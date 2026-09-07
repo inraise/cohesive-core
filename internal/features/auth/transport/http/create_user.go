@@ -10,6 +10,17 @@ import (
 
 type CreateUserResponse UserDTOResponse
 
+// CreateUser godoc
+// @Summary Создать пользователя
+// @Description Создать нового пользователя в системе
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body auth_service.CreateUserRequest true "CreateUser тело запроса"
+// @Success 201 {object} CreateUserResponse "Успешно созданный пользователь"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /auth/register [post]
 func (h *AuthHTTPHandler) CreateUser(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

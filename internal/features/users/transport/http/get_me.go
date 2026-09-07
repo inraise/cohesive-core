@@ -10,6 +10,17 @@ import (
 
 type GetMeResponse UserDTOResponse
 
+// GetMe godoc
+// @Summary Получить пользователя
+// @Description Получить информацию о текущем пользователе
+// @Tags users
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} UserDTOResponse "Пользователь получен"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "User not found"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /users/me [get]
 func (h *UsersHTTPHandler) GetMe(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

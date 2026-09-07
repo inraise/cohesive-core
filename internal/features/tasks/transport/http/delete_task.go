@@ -11,6 +11,18 @@ import (
 	"github.com/google/uuid"
 )
 
+// DeleteTask godoc
+// @Summary Удалить задачу
+// @Description Удалить задачу по ID
+// @Tags tasks
+// @Param id path string true "ID дома"
+// @Param task_id path string true "ID задачи"
+// @Success 204 "Задача удалена"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Task not found"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/tasks/{task_id} [delete]
 func (h *TasksHTTPHandler) DeleteTask(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

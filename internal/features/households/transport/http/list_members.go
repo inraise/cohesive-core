@@ -13,6 +13,19 @@ import (
 
 type ListMembersResponse []MemberDTOResponse
 
+// ListMembers godoc
+// @Summary Список участников дома
+// @Description Получить список участников дома с ролями. Доступно любому участнику
+// @Tags households
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Success 200 {array} households_transport_http.MemberDTOResponse "Список участников"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household not found or not a member"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/members [get]
 func (h *HouseholdsHTTPHandler) ListMembers(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

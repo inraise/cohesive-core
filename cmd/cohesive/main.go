@@ -27,9 +27,15 @@ import (
 	"syscall"
 	"time"
 
+	_ "cohesive-core/docs"
 	"go.uber.org/zap"
 )
 
+// @title 		Cohesive-Core
+// @version 	0.1
+// @description Cohesive Application REST-API scheme
+// @host 		127.0.0.1:5050
+// @BasePath 	/api/v1
 func main() {
 	cfg := core_config.NewConfigMust()
 	time.Local = cfg.TimeZone
@@ -114,6 +120,8 @@ func main() {
 	apiVersionRouterV1.RegisterRoutes(householdsTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(tasksTransportHTTP.Routes()...)
 	httpServer.RegisterAPIRoutes(apiVersionRouterV1)
+
+	httpServer.RegisterSwagger()
 
 	if err := httpServer.Run(ctx); err != nil {
 		logger.Error("HTTP server run error", zap.Error(err))

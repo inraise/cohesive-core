@@ -11,6 +11,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// GetTask godoc
+// @Summary Получить задачу
+// @Description Получить задачу по ID
+// @Tags tasks
+// @Produce json
+// @Param id path string true "ID дома"
+// @Param task_id path string true "ID задачи"
+// @Success 200 {object} tasks_transport_http.TaskDTOResponse "Задача"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Task not found"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/tasks/{task_id} [get]
 func (h *TasksHTTPHandler) GetTask(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

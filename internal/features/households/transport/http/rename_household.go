@@ -13,6 +13,23 @@ import (
 	"github.com/google/uuid"
 )
 
+// RenameHousehold godoc
+// @Summary Переименовать дом
+// @Description Изменить название дома. Доступно owner и admin
+// @Tags households
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param request body households_service.RenameHouseholdRequest true "RenameHousehold тело запроса"
+// @Success 200 {object} households_transport_http.HouseholdDTOResponse "Дом переименован"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Forbidden - role can't rename household"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household not found or not a member"
+// @Failure 409 {object} core_transport_http_response.ErrorResponse "Version conflict"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id} [patch]
 func (h *HouseholdsHTTPHandler) RenameHousehold(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
