@@ -11,6 +11,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// DeleteList godoc
+// @Summary Удалить список покупок
+// @Description Удалить список покупок целиком вместе со всеми пунктами
+// @Tags shoppinglists
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param list_id path string true "ID списка"
+// @Success 204 "Список удалён"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household or list not found"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/shopping-lists/{list_id} [delete]
 func (h *ShoppingListsHTTPHandler) DeleteList(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

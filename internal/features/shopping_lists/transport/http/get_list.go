@@ -11,6 +11,20 @@ import (
 	"github.com/google/uuid"
 )
 
+// GetList godoc
+// @Summary Получить список покупок
+// @Description Получить карточку списка вместе с его пунктами
+// @Tags shoppinglists
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param list_id path string true "ID списка"
+// @Success 200 {object} shoppinglists_transport_http.ShoppingListWithItemsDTOResponse "Список с пунктами"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household or list not found"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/shopping-lists/{list_id} [get]
 func (h *ShoppingListsHTTPHandler) GetList(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

@@ -46,6 +46,24 @@ func (r *PatchItemRequest) Validate() error {
 	return nil
 }
 
+// PatchItem godoc
+// @Summary Обновить пункт списка покупок
+// @Description Частично обновить пункт (name, quantity, is_purchased)
+// @Tags shoppinglists
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param list_id path string true "ID списка"
+// @Param item_id path string true "ID пункта"
+// @Param request body shoppinglists_transport_http.PatchItemRequest true "PatchItem тело запроса"
+// @Success 200 {object} shoppinglists_transport_http.ShoppingListItemDTOResponse "Пункт обновлён"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household, list, or item not found"
+// @Failure 409 {object} core_transport_http_response.ErrorResponse "Version conflict"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/shopping-lists/{list_id}/items/{item_id} [patch]
 func (h *ShoppingListsHTTPHandler) PatchItem(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

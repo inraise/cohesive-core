@@ -13,6 +13,21 @@ import (
 	"github.com/google/uuid"
 )
 
+// CreateList godoc
+// @Summary Создать список покупок
+// @Description Создать новый именованный список покупок в доме
+// @Tags shoppinglists
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param request body shoppinglists_service.CreateListRequest true "CreateList тело запроса"
+// @Success 201 {object} shoppinglists_transport_http.ShoppingListDTOResponse "Список создан"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household not found or not a member"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/shopping-lists [post]
 func (h *ShoppingListsHTTPHandler) CreateList(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

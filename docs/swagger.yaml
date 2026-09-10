@@ -163,6 +163,97 @@ definitions:
       user_id:
         type: string
     type: object
+  shoppinglists_service.CreateItemRequest:
+    properties:
+      name:
+        maxLength: 200
+        minLength: 1
+        type: string
+      quantity:
+        maxLength: 50
+        type: string
+    required:
+    - name
+    type: object
+  shoppinglists_service.CreateListRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  shoppinglists_service.RenameListRequest:
+    properties:
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  shoppinglists_transport_http.PatchItemRequest:
+    type: object
+  shoppinglists_transport_http.ShoppingListDTOResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      household_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  shoppinglists_transport_http.ShoppingListItemDTOResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      id:
+        type: string
+      is_purchased:
+        type: boolean
+      name:
+        type: string
+      quantity:
+        type: string
+      shopping_list_id:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
+  shoppinglists_transport_http.ShoppingListWithItemsDTOResponse:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      household_id:
+        type: string
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/shoppinglists_transport_http.ShoppingListItemDTOResponse'
+        type: array
+      name:
+        type: string
+      updated_at:
+        type: string
+      version:
+        type: integer
+    type: object
   tasks_service.CreateTaskRequest:
     properties:
       assigned_to:
@@ -841,6 +932,372 @@ paths:
       summary: Сменить роль участника / передать владение
       tags:
       - households
+  /households/{id}/shopping-lists:
+    get:
+      description: Получить все списки покупок дома (без вложенных пунктов)
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Списки покупок
+          schema:
+            items:
+              $ref: '#/definitions/shoppinglists_transport_http.ShoppingListDTOResponse'
+            type: array
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Список списков покупок
+      tags:
+      - shoppinglists
+    post:
+      consumes:
+      - application/json
+      description: Создать новый именованный список покупок в доме
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: CreateList тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/shoppinglists_service.CreateListRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Список создан
+          schema:
+            $ref: '#/definitions/shoppinglists_transport_http.ShoppingListDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household not found or not a member
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Создать список покупок
+      tags:
+      - shoppinglists
+  /households/{id}/shopping-lists/{list_id}:
+    delete:
+      description: Удалить список покупок целиком вместе со всеми пунктами
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID списка
+        in: path
+        name: list_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Список удалён
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household or list not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить список покупок
+      tags:
+      - shoppinglists
+    get:
+      description: Получить карточку списка вместе с его пунктами
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID списка
+        in: path
+        name: list_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список с пунктами
+          schema:
+            $ref: '#/definitions/shoppinglists_transport_http.ShoppingListWithItemsDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household or list not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Получить список покупок
+      tags:
+      - shoppinglists
+    patch:
+      consumes:
+      - application/json
+      description: Изменить название списка покупок
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID списка
+        in: path
+        name: list_id
+        required: true
+        type: string
+      - description: RenameList тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/shoppinglists_service.RenameListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список переименован
+          schema:
+            $ref: '#/definitions/shoppinglists_transport_http.ShoppingListDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household or list not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "409":
+          description: Version conflict
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Переименовать список покупок
+      tags:
+      - shoppinglists
+  /households/{id}/shopping-lists/{list_id}/items:
+    post:
+      consumes:
+      - application/json
+      description: Добавить новый пункт (name, опционально quantity) в список покупок
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID списка
+        in: path
+        name: list_id
+        required: true
+        type: string
+      - description: CreateItem тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/shoppinglists_service.CreateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пункт добавлен
+          schema:
+            $ref: '#/definitions/shoppinglists_transport_http.ShoppingListItemDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household or list not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Добавить пункт в список покупок
+      tags:
+      - shoppinglists
+  /households/{id}/shopping-lists/{list_id}/items/{item_id}:
+    delete:
+      description: Удалить пункт из списка покупок
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID списка
+        in: path
+        name: list_id
+        required: true
+        type: string
+      - description: ID пункта
+        in: path
+        name: item_id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Пункт удалён
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household, list, or item not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить пункт списка покупок
+      tags:
+      - shoppinglists
+    patch:
+      consumes:
+      - application/json
+      description: Частично обновить пункт (name, quantity, is_purchased)
+      parameters:
+      - description: ID дома
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: ID списка
+        in: path
+        name: list_id
+        required: true
+        type: string
+      - description: ID пункта
+        in: path
+        name: item_id
+        required: true
+        type: string
+      - description: PatchItem тело запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/shoppinglists_transport_http.PatchItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пункт обновлён
+          schema:
+            $ref: '#/definitions/shoppinglists_transport_http.ShoppingListItemDTOResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "404":
+          description: Household, list, or item not found
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "409":
+          description: Version conflict
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/core_transport_http_response.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Обновить пункт списка покупок
+      tags:
+      - shoppinglists
   /households/{id}/tasks:
     get:
       description: Получить список задач дома

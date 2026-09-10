@@ -13,6 +13,23 @@ import (
 	"github.com/google/uuid"
 )
 
+// RenameList godoc
+// @Summary Переименовать список покупок
+// @Description Изменить название списка покупок
+// @Tags shoppinglists
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param list_id path string true "ID списка"
+// @Param request body shoppinglists_service.RenameListRequest true "RenameList тело запроса"
+// @Success 200 {object} shoppinglists_transport_http.ShoppingListDTOResponse "Список переименован"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household or list not found"
+// @Failure 409 {object} core_transport_http_response.ErrorResponse "Version conflict"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/shopping-lists/{list_id} [patch]
 func (h *ShoppingListsHTTPHandler) RenameList(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
