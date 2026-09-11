@@ -83,5 +83,5 @@ ps:
 	@docker compose ps
 
 refresh-swag:
-	@swag init -g cmd/cohesive/main.go -o ./docs
+	@swag init -g main.go -o ../../docs -d ./cmd/cohesive,./internal/features,./internal/core --parseDependency --parseInternal
 	
