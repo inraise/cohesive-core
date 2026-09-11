@@ -14,6 +14,9 @@ import (
 	households_repository_postgres "cohesive-core/internal/features/households/repository/postgres"
 	households_service "cohesive-core/internal/features/households/service"
 	households_transport_http "cohesive-core/internal/features/households/transport/http"
+	shoppinglists_repository_postgres "cohesive-core/internal/features/shopping_lists/repository/postgres"
+	shoppinglists_service "cohesive-core/internal/features/shopping_lists/service"
+	shoppinglists_transport_http "cohesive-core/internal/features/shopping_lists/transport/http"
 	tasks_repository_postgres "cohesive-core/internal/features/tasks/repository/postgres"
 	tasks_service "cohesive-core/internal/features/tasks/service"
 	tasks_transport_http "cohesive-core/internal/features/tasks/transport/http"
@@ -28,6 +31,7 @@ import (
 	"time"
 
 	_ "cohesive-core/docs"
+
 	"go.uber.org/zap"
 )
 
@@ -98,6 +102,11 @@ func main() {
 	tasksService := tasks_service.NewTasksService(tasksRepository)
 	tasksTransportHTTP := tasks_transport_http.NewTasksHTTPHandler(tasksService, tokenManager)
 
+	logger.Debug("initializing feature", zap.String("feature", "shoppinglists"))
+	shoppingListsRepository := shoppinglists_repository_postgres.NewShoppingListsRepository(pool)
+	shoppingListsService := shoppinglists_service.NewShoppingListsService(shoppingListsRepository)
+	shoppingListsTransportHTTP := shoppinglists_transport_http.NewShoppingListsHTTPHandler(shoppingListsService, tokenManager)
+
 	logger.Debug("initializing HTTP server")
 
 	httpConfig := core_transport_http_server.NewConfigMust()
@@ -119,6 +128,7 @@ func main() {
 	apiVersionRouterV1.RegisterRoutes(usersTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(householdsTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(tasksTransportHTTP.Routes()...)
+	apiVersionRouterV1.RegisterRoutes(shoppingListsTransportHTTP.Routes()...)
 	httpServer.RegisterAPIRoutes(apiVersionRouterV1)
 
 	httpServer.RegisterSwagger()

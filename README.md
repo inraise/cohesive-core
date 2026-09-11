@@ -41,7 +41,8 @@ cohesive-core/
 │       ├── auth/         # Регистрация, логин, refresh, logout
 │       ├── users/         # Профиль текущего пользователя (/users/me)
 │       ├── households/    # Дома, участники, роли, приглашения
-│       └── tasks/          # Задачи внутри дома
+│       ├── tasks/          # Задачи внутри дома
+│       └── shoppinglists/  # Списки покупок и пункты внутри них
 │
 ├── migrations/                  # SQL-миграции (golang-migrate)
 ├── docker-compose.yaml          # cohesive, postgres, redis, migrate, port-forwarder
@@ -130,6 +131,8 @@ make cohesive-run           # 4. запустить приложение лок�
 | `TIME_ZONE`             |             | `UTC`        | Тайм-зона приложения                   |
 
 > `make cohesive-run` подставляет `LOGGER_FOLDER`/`POSTGRES_HOST` автоматически.
+>
+> ⚠️ `docker-compose.yaml`: сервис `cohesive` не пробрасывает `REDIS_*` в контейнер (только Postgres) — для `make cohesive-deploy` добавь `REDIS_ADDR=cohesive-redis:6379` и остальные `REDIS_*` в `environment:`.
 
 ---
 
@@ -146,32 +149,33 @@ make cohesive-run           # 4. запустить приложение лок�
 | `make cohesive-deploy` / `-undeploy`    | Собрать/запустить или остановить приложение в Docker |
 | `make logs-cleanup`                     | Очистить локальные логи                              |
 | `make ps`                               | Статус контейнеров Compose                           |
-| `refresh-swag`                          | Обновление конфигурации Swagger                      |
 
 ---
 
 ## API-документация
 
-Полное описание всех эндпоинтов (auth, users, households, tasks — запросы, ответы, коды ошибок) — в Swagger UI, генерируется из `@swag`-аннотаций над хендлерами (`swaggo/swag`):
+Полное описание всех эндпоинтов (auth, users, households, tasks, shoppinglists — запросы, ответы, коды ошибок) — в Swagger UI, генерируется из `@swag`-аннотаций над хендлерами (`swaggo/swag`):
 
 **http://localhost:5050/swagger/index.html**
 
 JSON-спека отдельно: `http://localhost:5050/swagger/doc.json`.
 
-> Раздача Swagger подключается вызовом `httpServer.RegisterSwagger()` в `main.go` — если ещё не добавлен, эндпоинты выше не заработают. Сама спека собирается командой `swag init` (перегенерировать после правки `@swag`-аннотаций).
+> Раздача Swagger подключается вызовом `httpServer.RegisterSwagger()` в `main.go` — если ещё не добавлен, эндпоинты выше не заработают. Сама спека собирается командой `swag init` (перегенерировать после правки `@swag`-аннотаций, до `RegisterSwagger` он читает уже сгенерированный `docs/`).
 
 ---
 
 ## Схема базы данных
 
-| Таблица             | Миграция                | Назначение                                                                     |
-| ------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `users`             | `000001_init_schema`    | Аккаунты пользователей                                                         |
-| `refresh_tokens`    | `000002_refresh_tokens` | Хеши refresh-токенов, отзыв и ротация                                          |
-| `households`        | `000003_households`     | Дома (`id`, `name`, `version`)                                                 |
-| `household_members` | `000003_households`     | Членство: `household_id` + `user_id` + `role`, `UNIQUE(household_id, user_id)` |
-| `household_invites` | `000003_households`     | Инвайт-коды: срок жизни, лимит использований, отзыв                            |
-| `tasks`             | `000004_tasks`          | Задачи внутри дома: `title`, `status`, `assigned_to`                           |
+| Таблица               | Миграция                | Назначение                                                                     |
+| --------------------- | ----------------------- | ------------------------------------------------------------------------------ |
+| `users`               | `000001_init_schema`    | Аккаунты пользователей                                                         |
+| `refresh_tokens`      | `000002_refresh_tokens` | Хеши refresh-токенов, отзыв и ротация                                          |
+| `households`          | `000003_households`     | Дома (`id`, `name`, `version`)                                                 |
+| `household_members`   | `000003_households`     | Членство: `household_id` + `user_id` + `role`, `UNIQUE(household_id, user_id)` |
+| `household_invites`   | `000003_households`     | Инвайт-коды: срок жизни, лимит использований, отзыв                            |
+| `tasks`               | `000004_tasks`          | Задачи внутри дома: `title`, `status`, `assigned_to`                           |
+| `shopping_lists`      | `000005_shopping_lists` | Именованные списки покупок в доме: `name`                                      |
+| `shopping_list_items` | `000005_shopping_lists` | Пункты списка: `name`, `quantity`, `is_purchased`                              |
 
 Все таблицы, кроме `users`, ссылаются на `households`/`users` с `ON DELETE CASCADE` (кроме `tasks.assigned_to` — `ON DELETE SET NULL`, задача не удаляется вместе с исполнителем). Точные колонки и ограничения — в файлах `migrations/*.up.sql` или в Swagger-моделях ответов.
 
@@ -185,6 +189,4 @@ JSON-спека отдельно: `http://localhost:5050/swagger/doc.json`.
 
 ## Roadmap
 
-Проект в активной разработке.
-
-**Готово:** JWT auth (login/refresh/logout с ротацией), `/users/me` CRUD, `/households` (дома, участники, роли, передача владения, инвайты), `/households/{id}/tasks` CRUD, rate limiting через Redis.
+**Готово:** JWT auth (login/refresh/logout с ротацией), `/users/me` CRUD, `/households` (дома, участники, роли, передача владения, инвайты), `/households/{id}/tasks` CRUD, `/households/{id}/shopping-lists` (списки + пункты) CRUD, rate limiting через Redis.

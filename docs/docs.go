@@ -971,6 +971,569 @@ const docTemplate = `{
                 }
             }
         },
+        "/households/{id}/shopping-lists": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получить все списки покупок дома (без вложенных пунктов)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shoppinglists"
+                ],
+                "summary": "Список списков покупок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Списки покупок",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/shoppinglists_transport_http.ShoppingListDTOResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Создать новый именованный список покупок в доме",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shoppinglists"
+                ],
+                "summary": "Создать список покупок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "CreateList тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_service.CreateListRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Список создан",
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_transport_http.ShoppingListDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household not found or not a member",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/{id}/shopping-lists/{list_id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получить карточку списка вместе с его пунктами",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shoppinglists"
+                ],
+                "summary": "Получить список покупок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID списка",
+                        "name": "list_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список с пунктами",
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_transport_http.ShoppingListWithItemsDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household or list not found",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Удалить список покупок целиком вместе со всеми пунктами",
+                "tags": [
+                    "shoppinglists"
+                ],
+                "summary": "Удалить список покупок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID списка",
+                        "name": "list_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Список удалён"
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household or list not found",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Изменить название списка покупок",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shoppinglists"
+                ],
+                "summary": "Переименовать список покупок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID списка",
+                        "name": "list_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "RenameList тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_service.RenameListRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список переименован",
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_transport_http.ShoppingListDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household or list not found",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Version conflict",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/{id}/shopping-lists/{list_id}/items": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Добавить новый пункт (name, опционально quantity) в список покупок",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shoppinglists"
+                ],
+                "summary": "Добавить пункт в список покупок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID списка",
+                        "name": "list_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "CreateItem тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_service.CreateItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Пункт добавлен",
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_transport_http.ShoppingListItemDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household or list not found",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/households/{id}/shopping-lists/{list_id}/items/{item_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Удалить пункт из списка покупок",
+                "tags": [
+                    "shoppinglists"
+                ],
+                "summary": "Удалить пункт списка покупок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID списка",
+                        "name": "list_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID пункта",
+                        "name": "item_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Пункт удалён"
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household, list, or item not found",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Частично обновить пункт (name, quantity, is_purchased)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "shoppinglists"
+                ],
+                "summary": "Обновить пункт списка покупок",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID дома",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID списка",
+                        "name": "list_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID пункта",
+                        "name": "item_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "PatchItem тело запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_transport_http.PatchItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Пункт обновлён",
+                        "schema": {
+                            "$ref": "#/definitions/shoppinglists_transport_http.ShoppingListItemDTOResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Household, list, or item not found",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Version conflict",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/core_transport_http_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/households/{id}/tasks": {
             "get": {
                 "description": "Получить список задач дома",
@@ -1651,6 +2214,142 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "shoppinglists_service.CreateItemRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "minLength": 1
+                },
+                "quantity": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
+        "shoppinglists_service.CreateListRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                }
+            }
+        },
+        "shoppinglists_service.RenameListRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                }
+            }
+        },
+        "shoppinglists_transport_http.PatchItemRequest": {
+            "type": "object"
+        },
+        "shoppinglists_transport_http.ShoppingListDTOResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "household_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "shoppinglists_transport_http.ShoppingListItemDTOResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_purchased": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "string"
+                },
+                "shopping_list_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
+                }
+            }
+        },
+        "shoppinglists_transport_http.ShoppingListWithItemsDTOResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "household_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/shoppinglists_transport_http.ShoppingListItemDTOResponse"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
