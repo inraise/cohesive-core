@@ -42,7 +42,8 @@ cohesive-core/
 │       ├── users/         # Профиль текущего пользователя (/users/me)
 │       ├── households/    # Дома, участники, роли, приглашения
 │       ├── tasks/          # Задачи внутри дома
-│       └── shoppinglists/  # Списки покупок и пункты внутри них
+│       ├── shoppinglists/  # Списки покупок и пункты внутри них
+│       └── budget/          # Общий бюджет дома: приходы, расходы, баланс
 │
 ├── migrations/                  # SQL-миграции (golang-migrate)
 ├── docker-compose.yaml          # cohesive, postgres, redis, migrate, port-forwarder
@@ -131,8 +132,6 @@ make cohesive-run           # 4. запустить приложение лок�
 | `TIME_ZONE`             |             | `UTC`        | Тайм-зона приложения                   |
 
 > `make cohesive-run` подставляет `LOGGER_FOLDER`/`POSTGRES_HOST` автоматически.
->
-> ⚠️ `docker-compose.yaml`: сервис `cohesive` не пробрасывает `REDIS_*` в контейнер (только Postgres) — для `make cohesive-deploy` добавь `REDIS_ADDR=cohesive-redis:6379` и остальные `REDIS_*` в `environment:`.
 
 ---
 
@@ -166,16 +165,17 @@ JSON-спека отдельно: `http://localhost:5050/swagger/doc.json`.
 
 ## Схема базы данных
 
-| Таблица               | Миграция                | Назначение                                                                     |
-| --------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `users`               | `000001_init_schema`    | Аккаунты пользователей                                                         |
-| `refresh_tokens`      | `000002_refresh_tokens` | Хеши refresh-токенов, отзыв и ротация                                          |
-| `households`          | `000003_households`     | Дома (`id`, `name`, `version`)                                                 |
-| `household_members`   | `000003_households`     | Членство: `household_id` + `user_id` + `role`, `UNIQUE(household_id, user_id)` |
-| `household_invites`   | `000003_households`     | Инвайт-коды: срок жизни, лимит использований, отзыв                            |
-| `tasks`               | `000004_tasks`          | Задачи внутри дома: `title`, `status`, `assigned_to`                           |
-| `shopping_lists`      | `000005_shopping_lists` | Именованные списки покупок в доме: `name`                                      |
-| `shopping_list_items` | `000005_shopping_lists` | Пункты списка: `name`, `quantity`, `is_purchased`                              |
+| Таблица                  | Миграция                  | Назначение                                                                       |
+| ------------------------ | ------------------------- | -------------------------------------------------------------------------------- |
+| `users`                  | `000001_init_schema`      | Аккаунты пользователей                                                           |
+| `refresh_tokens`         | `000002_refresh_tokens`   | Хеши refresh-токенов, отзыв и ротация                                            |
+| `households`             | `000003_households`       | Дома (`id`, `name`, `version`)                                                   |
+| `household_members`      | `000003_households`       | Членство: `household_id` + `user_id` + `role`, `UNIQUE(household_id, user_id)`   |
+| `household_invites`      | `000003_households`       | Инвайт-коды: срок жизни, лимит использований, отзыв                              |
+| `tasks`                  | `000004_tasks`            | Задачи внутри дома: `title`, `status`, `assigned_to`                             |
+| `shopping_lists`         | `000005_shopping_lists`   | Именованные списки покупок в доме: `name`                                        |
+| `shopping_list_items`    | `000005_shopping_lists`   | Пункты списка: `name`, `quantity`, `is_purchased`                                |
+| `household_transactions` | `000006_household_budget` | Приходы/расходы общего бюджета: `type`, `amount` (в минимальных единицах валюты) |
 
 Все таблицы, кроме `users`, ссылаются на `households`/`users` с `ON DELETE CASCADE` (кроме `tasks.assigned_to` — `ON DELETE SET NULL`, задача не удаляется вместе с исполнителем). Точные колонки и ограничения — в файлах `migrations/*.up.sql` или в Swagger-моделях ответов.
 
@@ -189,4 +189,4 @@ JSON-спека отдельно: `http://localhost:5050/swagger/doc.json`.
 
 ## Roadmap
 
-**Готово:** JWT auth (login/refresh/logout с ротацией), `/users/me` CRUD, `/households` (дома, участники, роли, передача владения, инвайты), `/households/{id}/tasks` CRUD, `/households/{id}/shopping-lists` (списки + пункты) CRUD, rate limiting через Redis.
+**Готово:** JWT auth (login/refresh/logout с ротацией), `/users/me` CRUD, `/households` (дома, участники, роли, передача владения, инвайты), `/households/{id}/tasks` CRUD, `/households/{id}/shopping-lists` (списки + пункты) CRUD, `/households/{id}/transactions` + `/households/{id}/budget` (общий бюджет, баланс, вклад участников), rate limiting через Redis.
