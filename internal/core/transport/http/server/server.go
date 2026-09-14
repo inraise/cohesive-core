@@ -1,15 +1,16 @@
 package core_transport_http_server
 
 import (
-	"cohesive-core/docs"
-	core_logger "cohesive-core/internal/core/logger"
-	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/swaggo/http-swagger/v2"
+	"cohesive-core/docs"
+	core_logger "cohesive-core/internal/core/logger"
+	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
+
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.uber.org/zap"
 )
 

@@ -1,6 +1,9 @@
 package budget_transport_http
 
 import (
+	"fmt"
+	"net/http"
+
 	core_domain "cohesive-core/internal/core/domain"
 	core_errors "cohesive-core/internal/core/errors"
 	core_logger "cohesive-core/internal/core/logger"
@@ -8,8 +11,6 @@ import (
 	core_transport_http_request "cohesive-core/internal/core/transport/http/request"
 	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 	core_http_types "cohesive-core/internal/core/transport/http/types"
-	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 )
@@ -40,6 +41,24 @@ func (r *PatchTransactionRequest) Validate() error {
 	return nil
 }
 
+// PatchTransaction godoc
+// @Summary Изменить транзакцию
+// @Description Частично обновить сумму/описание. Доступно только автору записи или owner/admin дома
+// @Tags budget
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param tx_id path string true "ID транзакции"
+// @Param request body budget_transport_http.PatchTransactionRequest true "PatchTransaction тело запроса"
+// @Success 200 {object} budget_transport_http.TransactionDTOResponse "Транзакция обновлена"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Forbidden - not the author or owner/admin"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household or transaction not found"
+// @Failure 409 {object} core_transport_http_response.ErrorResponse "Version conflict"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/transactions/{tx_id} [patch]
 func (h *BudgetHTTPHandler) PatchTransaction(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
@@ -73,7 +92,7 @@ func (h *BudgetHTTPHandler) PatchTransaction(rw http.ResponseWriter, r *http.Req
 	}
 
 	var request PatchTransactionRequest
-	if err := core_transport_http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err = core_transport_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
 
 		return

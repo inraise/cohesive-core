@@ -1,18 +1,19 @@
 package users_transport_http
 
 import (
+	"fmt"
+	"net/http"
+
 	core_domain "cohesive-core/internal/core/domain"
 	core_logger "cohesive-core/internal/core/logger"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_request "cohesive-core/internal/core/transport/http/request"
 	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 	core_http_types "cohesive-core/internal/core/transport/http/types"
-	"fmt"
-	"net/http"
 )
 
 type PatchUserRequest struct {
-	Email        core_http_types.Nullable[string] `json:"email"`
+	Email    core_http_types.Nullable[string] `json:"email"`
 	Password core_http_types.Nullable[string] `json:"password"`
 
 	FirstName core_http_types.Nullable[string] `json:"first_name"`

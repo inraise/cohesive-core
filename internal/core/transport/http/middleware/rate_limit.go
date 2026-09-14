@@ -1,14 +1,15 @@
 package core_transport_http_middleware
 
 import (
-	core_errors "cohesive-core/internal/core/errors"
-	core_logger "cohesive-core/internal/core/logger"
-	core_pool_redis "cohesive-core/internal/core/repository/redis/pool"
-	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 	"fmt"
 	"net"
 	"net/http"
 	"time"
+
+	core_errors "cohesive-core/internal/core/errors"
+	core_logger "cohesive-core/internal/core/logger"
+	core_pool_redis "cohesive-core/internal/core/repository/redis/pool"
+	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 
 	"go.uber.org/zap"
 )

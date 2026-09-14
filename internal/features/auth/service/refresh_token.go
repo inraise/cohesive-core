@@ -1,8 +1,6 @@
 package auth_service
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
-	core_errors "cohesive-core/internal/core/errors"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -11,6 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	core_domain "cohesive-core/internal/core/domain"
+	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 )
@@ -69,7 +70,7 @@ func (s *AuthService) RefreshToken(
 		return nil, fmt.Errorf("refresh token is expired or revoked: %w", core_errors.ErrUnauthorized)
 	}
 
-	if err := s.authRepository.RevokeRefreshToken(ctx, stored.ID); err != nil {
+	if err = s.authRepository.RevokeRefreshToken(ctx, stored.ID); err != nil {
 		return nil, fmt.Errorf("revoke used refresh token: %w", err)
 	}
 

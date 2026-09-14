@@ -1,12 +1,13 @@
 package households_transport_http
 
 import (
+	"fmt"
+	"net/http"
+
 	core_domain "cohesive-core/internal/core/domain"
 	core_logger "cohesive-core/internal/core/logger"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
-	"fmt"
-	"net/http"
 )
 
 // AcceptInvite godoc

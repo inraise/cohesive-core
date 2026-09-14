@@ -1,9 +1,10 @@
 package auth_service
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
 	"context"
 	"fmt"
+
+	core_domain "cohesive-core/internal/core/domain"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,7 +30,7 @@ func (s *AuthService) CreateUser(
 	userUninit.Password = string(hashedPassword)
 	userDomain := domainFromDTO(userUninit)
 
-	if err := userDomain.Validate(); err != nil {
+	if err = userDomain.Validate(); err != nil {
 		return core_domain.User{}, fmt.Errorf("validate user domain: %w", err)
 	}
 

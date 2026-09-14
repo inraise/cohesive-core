@@ -1,13 +1,14 @@
 package tasks_repository_postgres
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
-	core_errors "cohesive-core/internal/core/errors"
-	core_pool "cohesive-core/internal/core/repository/postgres/pool"
 	"context"
 	"errors"
 	"fmt"
 	"time"
+
+	core_domain "cohesive-core/internal/core/domain"
+	core_errors "cohesive-core/internal/core/errors"
+	core_pool "cohesive-core/internal/core/repository/postgres/pool"
 )
 
 func (r *TasksRepository) PatchTask(

@@ -1,6 +1,13 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	core_config "cohesive-core/internal/core/config"
 	core_jwt "cohesive-core/internal/core/jwt"
 	core_logger "cohesive-core/internal/core/logger"
@@ -26,12 +33,6 @@ import (
 	users_repository_postgres "cohesive-core/internal/features/users/repository/postgres"
 	users_service "cohesive-core/internal/features/users/service"
 	users_transport_http "cohesive-core/internal/features/users/transport/http"
-	"context"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	_ "cohesive-core/docs"
 

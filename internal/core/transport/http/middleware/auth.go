@@ -1,14 +1,15 @@
 package core_transport_http_middleware
 
 import (
-	core_errors "cohesive-core/internal/core/errors"
-	core_jwt "cohesive-core/internal/core/jwt"
-	core_logger "cohesive-core/internal/core/logger"
-	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 	"context"
 	"fmt"
 	"net/http"
 	"strings"
+
+	core_errors "cohesive-core/internal/core/errors"
+	core_jwt "cohesive-core/internal/core/jwt"
+	core_logger "cohesive-core/internal/core/logger"
+	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 
 	"github.com/google/uuid"
 )

@@ -1,10 +1,11 @@
 package tasks_service
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
-	core_errors "cohesive-core/internal/core/errors"
 	"context"
 	"fmt"
+
+	core_domain "cohesive-core/internal/core/domain"
+	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 )
@@ -39,7 +40,7 @@ func (s *TasksService) PatchTask(
 		return core_domain.Task{}, fmt.Errorf("get task from repository: %w", err)
 	}
 
-	if err := task.ApplyPatch(patch); err != nil {
+	if err = task.ApplyPatch(patch); err != nil {
 		return core_domain.Task{}, fmt.Errorf("apply task patch: %w", err)
 	}
 

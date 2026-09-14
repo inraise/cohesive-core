@@ -1,6 +1,9 @@
 package tasks_transport_http
 
 import (
+	"fmt"
+	"net/http"
+
 	core_domain "cohesive-core/internal/core/domain"
 	core_errors "cohesive-core/internal/core/errors"
 	core_logger "cohesive-core/internal/core/logger"
@@ -8,8 +11,6 @@ import (
 	core_transport_http_request "cohesive-core/internal/core/transport/http/request"
 	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 	core_http_types "cohesive-core/internal/core/transport/http/types"
-	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 )
@@ -97,7 +98,7 @@ func (h *TasksHTTPHandler) PatchTask(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	var request PatchTaskRequest
-	if err := core_transport_http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err = core_transport_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
 
 		return

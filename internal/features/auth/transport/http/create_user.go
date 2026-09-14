@@ -1,11 +1,12 @@
 package auth_transport_http
 
 import (
+	"net/http"
+
 	core_logger "cohesive-core/internal/core/logger"
 	core_transport_http_request "cohesive-core/internal/core/transport/http/request"
 	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 	auth_service "cohesive-core/internal/features/auth/service"
-	"net/http"
 )
 
 type CreateUserResponse UserDTOResponse

@@ -1,9 +1,10 @@
 package core_transport_http_server
 
 import (
-	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	"fmt"
 	"net/http"
+
+	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 )
 
 type ApiVersion string

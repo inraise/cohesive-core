@@ -1,9 +1,10 @@
 package core_pool_pgx
 
 import (
-	core_pool "cohesive-core/internal/core/repository/postgres/pool"
 	"errors"
 	"fmt"
+
+	core_pool "cohesive-core/internal/core/repository/postgres/pool"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

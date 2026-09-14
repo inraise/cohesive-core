@@ -1,8 +1,9 @@
 package tasks_repository_postgres
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
 	"context"
+
+	core_domain "cohesive-core/internal/core/domain"
 )
 
 func (r *TasksRepository) CreateTask(
