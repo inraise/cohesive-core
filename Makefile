@@ -91,3 +91,8 @@ lint-fix:
 refresh-swag:
 	@swag init -g main.go -o ../../docs -d ./cmd/cohesive,./internal/features,./internal/core --parseDependency --parseInternal
 	
+test:
+	@go test ./... -race
+
+test-integration:
+	@go test -tags=integration ./... -v
