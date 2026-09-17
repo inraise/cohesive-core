@@ -1,13 +1,14 @@
 package auth_service_test
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
-	core_errors "cohesive-core/internal/core/errors"
 	"context"
 	"errors"
 	"fmt"
 	"testing"
 	"time"
+
+	core_domain "cohesive-core/internal/core/domain"
+	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

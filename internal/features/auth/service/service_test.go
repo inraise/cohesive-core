@@ -1,10 +1,11 @@
 package auth_service_test
 
 import (
-	core_jwt "cohesive-core/internal/core/jwt"
-	auth_service "cohesive-core/internal/features/auth/service"
 	"testing"
 	"time"
+
+	core_jwt "cohesive-core/internal/core/jwt"
+	auth_service "cohesive-core/internal/features/auth/service"
 
 	"github.com/go-openapi/testify/v2/require"
 )

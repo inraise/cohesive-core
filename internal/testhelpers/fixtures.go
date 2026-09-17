@@ -1,10 +1,11 @@
 package testhelpers
 
 import (
-	core_pool "cohesive-core/internal/core/repository/postgres/pool"
 	"context"
 	"testing"
 	"time"
+
+	core_pool "cohesive-core/internal/core/repository/postgres/pool"
 
 	"github.com/google/uuid"
 )

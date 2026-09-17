@@ -1,8 +1,9 @@
 package auth_service_test
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
 	"context"
+
+	core_domain "cohesive-core/internal/core/domain"
 
 	"github.com/google/uuid"
 )

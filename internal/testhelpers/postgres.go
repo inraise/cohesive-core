@@ -1,8 +1,6 @@
 package testhelpers
 
 import (
-	core_pool "cohesive-core/internal/core/repository/postgres/pool"
-	core_pool_pgx "cohesive-core/internal/core/repository/postgres/pool/pgx"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +8,9 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	core_pool "cohesive-core/internal/core/repository/postgres/pool"
+	core_pool_pgx "cohesive-core/internal/core/repository/postgres/pool/pgx"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
@@ -46,7 +47,7 @@ func NewPostgres(t *testing.T) core_pool.Pool {
 	}
 
 	t.Cleanup(func() {
-		if err := container.Terminate(context.Background()); err != nil {
+		if err = container.Terminate(context.Background()); err != nil {
 			t.Logf("terminate postgres container: %v", err)
 		}
 	})
@@ -61,7 +62,7 @@ func NewPostgres(t *testing.T) core_pool.Pool {
 		t.Fatalf("get container port: %v", err)
 	}
 
-	if err := runMigrations(host, mappedPort.Port()); err != nil {
+	if err = runMigrations(host, mappedPort.Port()); err != nil {
 		t.Fatalf("run migrations: %v", err)
 	}
 

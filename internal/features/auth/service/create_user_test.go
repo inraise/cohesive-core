@@ -1,10 +1,11 @@
 package auth_service_test
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
-	auth_service "cohesive-core/internal/features/auth/service"
 	"context"
 	"testing"
+
+	core_domain "cohesive-core/internal/core/domain"
+	auth_service "cohesive-core/internal/features/auth/service"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
