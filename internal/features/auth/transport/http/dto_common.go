@@ -1,8 +1,9 @@
 package auth_transport_http
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
 	"time"
+
+	core_domain "cohesive-core/internal/core/domain"
 
 	"github.com/google/uuid"
 )
@@ -31,14 +32,4 @@ func userDTOFromDomain(user core_domain.User) UserDTOResponse {
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 	}
-}
-
-func usersDTOFromDomains(users []core_domain.User) []UserDTOResponse {
-	usersDTO := make([]UserDTOResponse, len(users))
-
-	for i, user := range users {
-		usersDTO[i] = userDTOFromDomain(user)
-	}
-
-	return usersDTO
 }

@@ -1,11 +1,12 @@
 package households_service
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
-	core_errors "cohesive-core/internal/core/errors"
 	"context"
 	"errors"
 	"fmt"
+
+	core_domain "cohesive-core/internal/core/domain"
+	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 )
@@ -29,7 +30,7 @@ func (s *HouseholdsService) RemoveMember(
 			)
 		}
 
-		if err := s.householdsRepository.RemoveMember(ctx, householdID, targetID); err != nil {
+		if err = s.householdsRepository.RemoveMember(ctx, householdID, targetID); err != nil {
 			return fmt.Errorf("remove member: %w", err)
 		}
 

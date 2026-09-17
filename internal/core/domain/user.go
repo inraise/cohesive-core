@@ -1,9 +1,10 @@
 package core_domain
 
 import (
-	core_errors "cohesive-core/internal/core/errors"
 	"fmt"
 	"time"
+
+	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 )
@@ -60,7 +61,7 @@ func NewUserUninitialized(email, passwordHash, firstName string, lastName *strin
 
 func (u *User) Validate() error {
 	emailLen := len([]rune(u.Email))
-	if emailLen < 5 && emailLen > 100 {
+	if emailLen < 5 || emailLen > 100 {
 		return fmt.Errorf(
 			"invalid `Email` len: %d: %w",
 			emailLen,
@@ -69,7 +70,7 @@ func (u *User) Validate() error {
 	}
 
 	firstNameLen := len([]rune(u.FirstName))
-	if firstNameLen < 5 && firstNameLen > 100 {
+	if firstNameLen < 5 || firstNameLen > 100 {
 		return fmt.Errorf(
 			"invalid `FirstName` len: %d: %w",
 			firstNameLen,
@@ -79,7 +80,7 @@ func (u *User) Validate() error {
 
 	if u.LastName != nil {
 		lastNameLen := len([]rune(*u.LastName))
-		if lastNameLen < 5 && lastNameLen > 100 {
+		if lastNameLen < 5 || lastNameLen > 100 {
 			return fmt.Errorf(
 				"invalid `LastName` len: %d: %w",
 				lastNameLen,

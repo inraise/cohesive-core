@@ -1,10 +1,11 @@
 package auth_service
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
-	core_jwt "cohesive-core/internal/core/jwt"
 	"context"
 	"time"
+
+	core_domain "cohesive-core/internal/core/domain"
+	core_jwt "cohesive-core/internal/core/jwt"
 
 	"github.com/google/uuid"
 )

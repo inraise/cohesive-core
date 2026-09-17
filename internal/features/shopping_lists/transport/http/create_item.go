@@ -1,14 +1,15 @@
 package shoppinglists_transport_http
 
 import (
+	"fmt"
+	"net/http"
+
 	core_errors "cohesive-core/internal/core/errors"
 	core_logger "cohesive-core/internal/core/logger"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_request "cohesive-core/internal/core/transport/http/request"
 	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 	shoppinglists_service "cohesive-core/internal/features/shopping_lists/service"
-	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 )
@@ -62,7 +63,7 @@ func (h *ShoppingListsHTTPHandler) CreateItem(rw http.ResponseWriter, r *http.Re
 	}
 
 	var request shoppinglists_service.CreateItemRequest
-	if err := core_transport_http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err = core_transport_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
 
 		return

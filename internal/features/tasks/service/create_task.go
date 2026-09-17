@@ -1,10 +1,11 @@
 package tasks_service
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
-	core_errors "cohesive-core/internal/core/errors"
 	"context"
 	"fmt"
+
+	core_domain "cohesive-core/internal/core/domain"
+	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 )

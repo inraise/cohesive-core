@@ -1,9 +1,10 @@
 package core_domain
 
 import (
-	core_errors "cohesive-core/internal/core/errors"
 	"fmt"
 	"time"
+
+	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 )

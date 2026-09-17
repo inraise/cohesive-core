@@ -1,9 +1,10 @@
 package users_repository_postgres
 
 import (
-	core_errors "cohesive-core/internal/core/errors"
 	"context"
 	"fmt"
+
+	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 )

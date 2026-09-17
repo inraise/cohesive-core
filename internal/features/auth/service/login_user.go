@@ -1,11 +1,12 @@
 package auth_service
 
 import (
-	core_errors "cohesive-core/internal/core/errors"
 	"context"
 	"errors"
 	"fmt"
 	"time"
+
+	core_errors "cohesive-core/internal/core/errors"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,7 +30,7 @@ func (s *AuthService) LoginUser(
 		return nil, fmt.Errorf("get user from repository: %w", err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword(
+	if err = bcrypt.CompareHashAndPassword(
 		[]byte(user.PasswordHash),
 		[]byte(password),
 	); err != nil {

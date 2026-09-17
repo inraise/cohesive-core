@@ -1,18 +1,34 @@
 package budget_transport_http
 
 import (
+	"fmt"
+	"net/http"
+
 	core_errors "cohesive-core/internal/core/errors"
 	core_logger "cohesive-core/internal/core/logger"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_request "cohesive-core/internal/core/transport/http/request"
 	core_transport_http_response "cohesive-core/internal/core/transport/http/response"
 	budget_service "cohesive-core/internal/features/budget/service"
-	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
 )
 
+// CreateTransaction godoc
+// @Summary Записать приход/расход
+// @Description Добавить транзакцию (deposit - пополнение общего бюджета, expense - трата из него)
+// @Tags budget
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path string true "ID дома"
+// @Param request body budget_service.CreateTransactionRequest true "CreateTransaction тело запроса"
+// @Success 201 {object} budget_transport_http.TransactionDTOResponse "Транзакция создана"
+// @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 401 {object} core_transport_http_response.ErrorResponse "Unauthorized"
+// @Failure 404 {object} core_transport_http_response.ErrorResponse "Household not found or not a member"
+// @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
+// @Router /households/{id}/transactions [post]
 func (h *BudgetHTTPHandler) CreateTransaction(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
@@ -36,7 +52,7 @@ func (h *BudgetHTTPHandler) CreateTransaction(rw http.ResponseWriter, r *http.Re
 	}
 
 	var request budget_service.CreateTransactionRequest
-	if err := core_transport_http_request.DecodeAndValidateRequest(r, &request); err != nil {
+	if err = core_transport_http_request.DecodeAndValidateRequest(r, &request); err != nil {
 		responseHandler.ErrorResponse(err, "failed to decode and validate HTTP request")
 
 		return

@@ -1,10 +1,11 @@
 package auth_service
 
 import (
-	core_errors "cohesive-core/internal/core/errors"
 	"context"
 	"errors"
 	"fmt"
+
+	core_errors "cohesive-core/internal/core/errors"
 )
 
 func (s *AuthService) LogoutUser(

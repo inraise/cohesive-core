@@ -1,9 +1,10 @@
 package budget_service
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
 	"context"
 	"fmt"
+
+	core_domain "cohesive-core/internal/core/domain"
 
 	"github.com/google/uuid"
 )
@@ -24,11 +25,11 @@ func (s *BudgetService) PatchTransaction(
 		return core_domain.HouseholdTransaction{}, fmt.Errorf("get transaction from repository: %w", err)
 	}
 
-	if err := s.requireCanModify(ctx, householdID, callerID, tx); err != nil {
+	if err = s.requireCanModify(ctx, householdID, callerID, tx); err != nil {
 		return core_domain.HouseholdTransaction{}, err
 	}
 
-	if err := tx.ApplyPatch(patch); err != nil {
+	if err = tx.ApplyPatch(patch); err != nil {
 		return core_domain.HouseholdTransaction{}, fmt.Errorf("apply transaction patch: %w", err)
 	}
 

@@ -1,14 +1,15 @@
 package auth_transport_http
 
 import (
+	"context"
+	"net/http"
+	"time"
+
 	core_domain "cohesive-core/internal/core/domain"
 	core_pool_redis "cohesive-core/internal/core/repository/redis/pool"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_server "cohesive-core/internal/core/transport/http/server"
 	auth_service "cohesive-core/internal/features/auth/service"
-	"context"
-	"net/http"
-	"time"
 )
 
 const (
