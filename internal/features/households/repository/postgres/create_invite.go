@@ -1,9 +1,10 @@
 package households_repository_postgres
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
 	"context"
 	"fmt"
+
+	core_domain "cohesive-core/internal/core/domain"
 )
 
 func (r *HouseholdsRepository) CreateInvite(

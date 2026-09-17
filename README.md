@@ -1,11 +1,11 @@
 # Cohesive Core
-
+ 
 Бэкенд-сервис на Go для приложения по учёту домохозяйств: авторизация, дома, участники, приглашения, задачи. Модульный монолит с чётким разделением инфраструктуры и бизнес-логики.
-
----
-
+ 
+-----
+ 
 ## Содержание
-
+ 
 - [Архитектура](#-архитектура)
 - [Стек технологий](#-стек-технологий)
 - [Быстрый старт](#-быстрый-старт)
@@ -15,13 +15,12 @@
 - [Схема базы данных](#-схема-базы-данных)
 - [Логирование](#-логирование)
 - [Roadmap](#-roadmap)
-
----
-
+-----
+ 
 ## Архитектура
-
+ 
 Clean Architecture внутри модульного монолита: общая инфраструктура — в `internal/core`, бизнес-логика изолирована по фичам в `internal/features`, каждая со слоями `repository → service → transport`.
-
+ 
 ```text
 cohesive-core/
 ├── cmd/cohesive/               # main.go: сборка зависимостей и запуск сервера
@@ -42,16 +41,19 @@ cohesive-core/
 │       ├── users/         # Профиль текущего пользователя (/users/me)
 │       ├── households/    # Дома, участники, роли, приглашения
 │       ├── tasks/          # Задачи внутри дома
-│       └── shoppinglists/  # Списки покупок и пункты внутри них
+│       ├── shoppinglists/  # Списки покупок и пункты внутри них
+│       └── budget/          # Общий бюджет дома: приходы, расходы, баланс
 │
 ├── migrations/                  # SQL-миграции (golang-migrate)
+├── .github/workflows/ci.yml     # lint → build/vet → test
+├── .golangci.yml                # конфигурация golangci-lint
 ├── docker-compose.yaml          # cohesive, postgres, redis, migrate, port-forwarder
 ├── Makefile
 └── .env.example
 ```
-
+ 
 **Ключевые решения:**
-
+ 
 - **Версионирование API** через `APIVersionRouter` (`/api/v1`, префикс срезается до хендлера).
 - **Единая цепочка middleware:** `CORS → RequestID → Logger → Trace → Panic`, сквозной `request_id` в логах.
 - **Фичи не знают друг о друге на уровне Go** — только через свой интерфейс сервиса и `core_domain`-типы. Физически одна БД — точечный SQL к чужой таблице допустим (например, `tasks` проверяет членство в доме прямым запросом к `household_members`).
@@ -63,130 +65,133 @@ cohesive-core/
 - **Оптимистичная блокировка** через `version` у `User`/`Household`/`Task` — конкурентная запись → `409`.
 - **Роль — свойство членства**, не сущности: `household_members.role`, не колонка в `households`. Единственность `owner` держится атомарной операцией `TransferOwnership`, не схемой.
 - **Многошаговые операции без Go-транзакций** — `Pool` не даёт `Begin`/`Commit`, атомарность там, где нужна (создание дома + owner-membership, приём инвайта, передача владения) — через data-modifying CTE одним SQL-запросом.
-
----
-
+-----
+ 
 ## Стек технологий
-
-| Категория           | Технология                                                                   |
-| ------------------- | ---------------------------------------------------------------------------- |
-| Язык                | Go 1.26                                                                      |
-| HTTP                | `net/http` (`http.ServeMux`, Go 1.22+ `{wildcard}`-паттерны), без фреймворка |
-| База данных         | PostgreSQL 17 + [`pgx/v5`](https://github.com/jackc/pgx)                     |
-| Кэш / rate limiting | Redis 7 + [`go-redis/v9`](https://github.com/redis/go-redis)                 |
-| Миграции            | [`golang-migrate`](https://github.com/golang-migrate/migrate)                |
-| Логирование         | [`zap`](https://github.com/uber-go/zap)                                      |
-| Конфигурация        | [`envconfig`](https://github.com/kelseyhightower/envconfig)                  |
-| Валидация           | [`go-playground/validator`](https://github.com/go-playground/validator)      |
-| Хеширование паролей | `bcrypt`                                                                     |
-| Токены              | JWT (`golang-jwt/jwt/v5`) для access, opaque + SHA-256 для refresh           |
-| API-документация    | [`swaggo/swag`](https://github.com/swaggo/swag) + `http-swagger`             |
-| Контейнеризация     | Docker / Docker Compose                                                      |
-
----
-
+ 
+|Категория          |Технология                                                                |
+|-------------------|--------------------------------------------------------------------------|
+|Язык               |Go 1.26                                                                   |
+|HTTP               |`net/http` (`http.ServeMux`, Go 1.22+ `{wildcard}`-паттерны), без фреймворка|
+|База данных        |PostgreSQL 17 + [`pgx/v5`](https://github.com/jackc/pgx)                  |
+|Кэш / rate limiting|Redis 7 + [`go-redis/v9`](https://github.com/redis/go-redis)              |
+|Миграции           |[`golang-migrate`](https://github.com/golang-migrate/migrate)             |
+|Логирование        |[`zap`](https://github.com/uber-go/zap)                                   |
+|Конфигурация       |[`envconfig`](https://github.com/kelseyhightower/envconfig)               |
+|Валидация          |[`go-playground/validator`](https://github.com/go-playground/validator)   |
+|Хеширование паролей|`bcrypt`                                                                  |
+|Токены             |JWT (`golang-jwt/jwt/v5`) для access, opaque + SHA-256 для refresh        |
+|API-документация   |[`swaggo/swag`](https://github.com/swaggo/swag) + `http-swagger`          |
+|Контейнеризация    |Docker / Docker Compose                                                   |
+|Линтинг / CI       |[`golangci-lint`](https://golangci-lint.run) + GitHub Actions             |
+ 
+-----
+ 
 ## Быстрый старт
-
+ 
 ### Предварительные требования
-
+ 
 - Go 1.26+
 - Docker и Docker Compose
-
 ### Шаги
-
+ 
 ```bash
 cp .env.example .env        # 1. заполнить переменные окружения (см. таблицу ниже)
-make env-up                 # 2. поднять PostgreSQL и Redis
-make migrate-up             # 3. применить миграции
-make cohesive-run           # 4. запустить приложение локально
+make env-up                 # 2. поднять PostgreSQL
+make redis-up                # 3. поднять Redis
+make migrate-up             # 4. применить миграции
+make cohesive-run           # 5. запустить приложение локально
 ```
-
+ 
 Сервис поднимется на `HTTP_ADDR` (по умолчанию `http://localhost:5050`).
-
+ 
 Альтернатива — всё в Docker: `make cohesive-deploy` / `make cohesive-undeploy`.
-
----
-
+ 
+-----
+ 
 ## Переменные окружения
-
-| Переменная              | Обязательна | По умолчанию | Описание                               |
-| ----------------------- | ----------- | ------------ | -------------------------------------- |
-| `HTTP_ADDR`             | +           | —            | Адрес HTTP-сервера, например `:5050`   |
-| `HTTP_SHUTDOWN_TIMEOUT` |             | `30s`        | Таймаут graceful shutdown              |
-| `ALLOWED_ORIGINS`       | +           | —            | Origin'ы для CORS через запятую        |
-| `POSTGRES_HOST`         | +           | —            | Хост PostgreSQL                        |
-| `POSTGRES_PORT`         |             | `5432`       | Порт PostgreSQL                        |
-| `POSTGRES_USER`         | +           | —            | Пользователь БД                        |
-| `POSTGRES_PASSWORD`     | +           | —            | Пароль БД                              |
-| `POSTGRES_DB`           | +           | —            | Имя базы данных                        |
-| `POSTGRES_TIMEOUT`      | +           | —            | Таймаут соединения с БД                |
-| `REDIS_ADDR`            | +           | —            | Адрес Redis, например `localhost:6379` |
-| `REDIS_PASSWORD`        |             | `""`         | Пароль Redis                           |
-| `REDIS_DB`              |             | `0`          | Номер БД Redis                         |
-| `JWT_SECRET`            | +           | —            | Секрет подписи access-токенов (HMAC)   |
-| `JWT_ACCESS_TTL`        |             | `15m`        | Время жизни access-токена              |
-| `JWT_REFRESH_TTL`       |             | `720h`       | Время жизни refresh-токена             |
-| `LOGGER_LEVEL`          |             | `DEBUG`      | Уровень логирования                    |
-| `LOGGER_FOLDER`         | +           | —            | Папка для файлов логов                 |
-| `TIME_ZONE`             |             | `UTC`        | Тайм-зона приложения                   |
-
+ 
+|Переменная             |Обязательна|По умолчанию|Описание                                               |
+|-----------------------|-----------|------------|-------------------------------------------------------|
+|`HTTP_ADDR`            |+          |—           |Адрес HTTP-сервера, например `:5050`                    |
+|`HTTP_SHUTDOWN_TIMEOUT`|           |`30s`       |Таймаут graceful shutdown                              |
+|`ALLOWED_ORIGINS`      |+          |—           |Origin'ы для CORS через запятую                        |
+|`POSTGRES_HOST`        |+          |—           |Хост PostgreSQL                                        |
+|`POSTGRES_PORT`        |           |`5432`      |Порт PostgreSQL                                        |
+|`POSTGRES_USER`        |+          |—           |Пользователь БД                                        |
+|`POSTGRES_PASSWORD`    |+          |—           |Пароль БД                                              |
+|`POSTGRES_DB`          |+          |—           |Имя базы данных                                        |
+|`POSTGRES_TIMEOUT`     |+          |—           |Таймаут соединения с БД                                |
+|`REDIS_ADDR`           |+          |—           |Адрес Redis, например `localhost:6379`                 |
+|`REDIS_PASSWORD`       |           |`""`        |Пароль Redis                                           |
+|`REDIS_DB`             |           |`0`         |Номер БД Redis                                         |
+|`JWT_SECRET`           |+          |—           |Секрет подписи access-токенов (HMAC)                   |
+|`JWT_ACCESS_TTL`       |           |`15m`       |Время жизни access-токена                              |
+|`JWT_REFRESH_TTL`      |           |`720h`      |Время жизни refresh-токена                             |
+|`LOGGER_LEVEL`         |           |`DEBUG`     |Уровень логирования                                    |
+|`LOGGER_FOLDER`        |+          |—           |Папка для файлов логов                                 |
+|`TIME_ZONE`            |           |`UTC`       |Тайм-зона приложения                                   |
+ 
 > `make cohesive-run` подставляет `LOGGER_FOLDER`/`POSTGRES_HOST` автоматически.
->
-> ⚠️ `docker-compose.yaml`: сервис `cohesive` не пробрасывает `REDIS_*` в контейнер (только Postgres) — для `make cohesive-deploy` добавь `REDIS_ADDR=cohesive-redis:6379` и остальные `REDIS_*` в `environment:`.
 
----
-
+-----
+ 
 ## Команды Makefile
-
-| Команда                                 | Что делает                                           |
-| --------------------------------------- | ---------------------------------------------------- |
-| `make env-up` / `make env-down`         | Поднять / остановить PostgreSQL и Redis              |
-| `make env-port-forward` / `-close`      | Проброс порта `5432` наружу через `socat`            |
-| `make env-cleanup`                      | Полностью снести окружение и данные БД               |
-| `make migrate-create seq=<name>`        | Создать новую пару миграций `up`/`down`              |
-| `make migrate-up` / `make migrate-down` | Применить / откатить миграции                        |
-| `make cohesive-run`                     | Запустить приложение локально (`go run`)             |
-| `make cohesive-deploy` / `-undeploy`    | Собрать/запустить или остановить приложение в Docker |
-| `make logs-cleanup`                     | Очистить локальные логи                              |
-| `make ps`                               | Статус контейнеров Compose                           |
-
----
-
+ 
+|Команда                                |Что делает                                                |
+|---------------------------------------|-----------------------------------------------------------|
+|`make env-up` / `make env-down`        |Поднять / остановить PostgreSQL                             |
+|`make redis-up` / `make redis-down`    |Поднять / остановить Redis                                  |
+|`make lint` / `make lint-fix`          |Прогнать `golangci-lint` (с `-fix` — автоисправление)        |
+|`make test`                            |Юнит-тесты (`go test ./... -race`)                          |
+|`make test-integration`                |Интеграционные тесты — поднимают реальный Postgres в Docker через `testcontainers-go` (нужен запущенный Docker)|
+|`make env-port-forward` / `-close`     |Проброс порта `5432` наружу через `socat`                  |
+|`make env-cleanup`                     |Полностью снести окружение и данные БД                      |
+|`make migrate-create seq=<name>`       |Создать новую пару миграций `up`/`down`                     |
+|`make migrate-up` / `make migrate-down`|Применить / откатить миграции                               |
+|`make cohesive-run`                    |Запустить приложение локально (`go run`)                    |
+|`make cohesive-deploy` / `-undeploy`   |Собрать/запустить или остановить приложение в Docker         |
+|`make logs-cleanup`                    |Очистить локальные логи                                     |
+|`make ps`                              |Статус контейнеров Compose                                  |
+ 
+-----
+ 
 ## API-документация
-
+ 
 Полное описание всех эндпоинтов (auth, users, households, tasks, shoppinglists — запросы, ответы, коды ошибок) — в Swagger UI, генерируется из `@swag`-аннотаций над хендлерами (`swaggo/swag`):
-
+ 
 **http://localhost:5050/swagger/index.html**
-
+ 
 JSON-спека отдельно: `http://localhost:5050/swagger/doc.json`.
-
+ 
 > Раздача Swagger подключается вызовом `httpServer.RegisterSwagger()` в `main.go` — если ещё не добавлен, эндпоинты выше не заработают. Сама спека собирается командой `swag init` (перегенерировать после правки `@swag`-аннотаций, до `RegisterSwagger` он читает уже сгенерированный `docs/`).
-
----
-
+ 
+-----
+ 
 ## Схема базы данных
-
-| Таблица               | Миграция                | Назначение                                                                     |
-| --------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `users`               | `000001_init_schema`    | Аккаунты пользователей                                                         |
-| `refresh_tokens`      | `000002_refresh_tokens` | Хеши refresh-токенов, отзыв и ротация                                          |
-| `households`          | `000003_households`     | Дома (`id`, `name`, `version`)                                                 |
-| `household_members`   | `000003_households`     | Членство: `household_id` + `user_id` + `role`, `UNIQUE(household_id, user_id)` |
-| `household_invites`   | `000003_households`     | Инвайт-коды: срок жизни, лимит использований, отзыв                            |
-| `tasks`               | `000004_tasks`          | Задачи внутри дома: `title`, `status`, `assigned_to`                           |
-| `shopping_lists`      | `000005_shopping_lists` | Именованные списки покупок в доме: `name`                                      |
-| `shopping_list_items` | `000005_shopping_lists` | Пункты списка: `name`, `quantity`, `is_purchased`                              |
-
+ 
+|Таблица              |Миграция              |Назначение                                          |
+|----------------------|-----------------------|-----------------------------------------------------|
+|`users`               |`000001_init_schema`   |Аккаунты пользователей                              |
+|`refresh_tokens`      |`000002_refresh_tokens`|Хеши refresh-токенов, отзыв и ротация               |
+|`households`          |`000003_households`    |Дома (`id`, `name`, `version`)                       |
+|`household_members`   |`000003_households`    |Членство: `household_id` + `user_id` + `role`, `UNIQUE(household_id, user_id)`|
+|`household_invites`   |`000003_households`    |Инвайт-коды: срок жизни, лимит использований, отзыв |
+|`tasks`                |`000004_tasks`         |Задачи внутри дома: `title`, `status`, `assigned_to`|
+|`shopping_lists`       |`000005_shopping_lists`|Именованные списки покупок в доме: `name`         |
+|`shopping_list_items`  |`000005_shopping_lists`|Пункты списка: `name`, `quantity`, `is_purchased`  |
+|`household_transactions`|`000006_household_budget`|Приходы/расходы общего бюджета: `type`, `amount` (в минимальных единицах валюты)|
+ 
 Все таблицы, кроме `users`, ссылаются на `households`/`users` с `ON DELETE CASCADE` (кроме `tasks.assigned_to` — `ON DELETE SET NULL`, задача не удаляется вместе с исполнителем). Точные колонки и ограничения — в файлах `migrations/*.up.sql` или в Swagger-моделях ответов.
-
----
-
+ 
+-----
+ 
 ## Логирование
-
+ 
 `zap`, структурированный вывод, отдельный файл на запуск в `LOGGER_FOLDER` (имя — таймстемп старта), уровень — `LOGGER_LEVEL`. Каждый запрос получает сквозной `request_id`.
-
----
-
+ 
+-----
+ 
 ## Roadmap
-
-**Готово:** JWT auth (login/refresh/logout с ротацией), `/users/me` CRUD, `/households` (дома, участники, роли, передача владения, инвайты), `/households/{id}/tasks` CRUD, `/households/{id}/shopping-lists` (списки + пункты) CRUD, rate limiting через Redis.
+ 
+**Готово:** JWT auth (login/refresh/logout с ротацией), `/users/me` CRUD, `/households` (дома, участники, роли, передача владения, инвайты), `/households/{id}/tasks` CRUD, `/households/{id}/shopping-lists` (списки + пункты) CRUD, `/households/{id}/transactions` + `/households/{id}/budget` (общий бюджет, баланс, вклад участников), rate limiting через Redis.

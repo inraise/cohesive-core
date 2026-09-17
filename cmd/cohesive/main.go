@@ -1,6 +1,13 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	core_config "cohesive-core/internal/core/config"
 	core_jwt "cohesive-core/internal/core/jwt"
 	core_logger "cohesive-core/internal/core/logger"
@@ -11,6 +18,9 @@ import (
 	auth_repository_postgres "cohesive-core/internal/features/auth/repository/postgres"
 	auth_service "cohesive-core/internal/features/auth/service"
 	auth_transport_http "cohesive-core/internal/features/auth/transport/http"
+	budget_repository_postgres "cohesive-core/internal/features/budget/repository/postgres"
+	budget_service "cohesive-core/internal/features/budget/service"
+	budget_transport_http "cohesive-core/internal/features/budget/transport/http"
 	households_repository_postgres "cohesive-core/internal/features/households/repository/postgres"
 	households_service "cohesive-core/internal/features/households/service"
 	households_transport_http "cohesive-core/internal/features/households/transport/http"
@@ -23,12 +33,6 @@ import (
 	users_repository_postgres "cohesive-core/internal/features/users/repository/postgres"
 	users_service "cohesive-core/internal/features/users/service"
 	users_transport_http "cohesive-core/internal/features/users/transport/http"
-	"context"
-	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	_ "cohesive-core/docs"
 
@@ -107,6 +111,11 @@ func main() {
 	shoppingListsService := shoppinglists_service.NewShoppingListsService(shoppingListsRepository)
 	shoppingListsTransportHTTP := shoppinglists_transport_http.NewShoppingListsHTTPHandler(shoppingListsService, tokenManager)
 
+	logger.Debug("initializing feature", zap.String("feature", "budget"))
+	budgetRepository := budget_repository_postgres.NewBudgetRepository(pool)
+	budgetService := budget_service.NewBudgetService(budgetRepository)
+	budgetTransportHTTP := budget_transport_http.NewBudgetHTTPHandler(budgetService, tokenManager)
+
 	logger.Debug("initializing HTTP server")
 
 	httpConfig := core_transport_http_server.NewConfigMust()
@@ -129,6 +138,7 @@ func main() {
 	apiVersionRouterV1.RegisterRoutes(householdsTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(tasksTransportHTTP.Routes()...)
 	apiVersionRouterV1.RegisterRoutes(shoppingListsTransportHTTP.Routes()...)
+	apiVersionRouterV1.RegisterRoutes(budgetTransportHTTP.Routes()...)
 	httpServer.RegisterAPIRoutes(apiVersionRouterV1)
 
 	httpServer.RegisterSwagger()

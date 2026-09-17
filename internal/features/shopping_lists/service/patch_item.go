@@ -1,9 +1,10 @@
 package shoppinglists_service
 
 import (
-	core_domain "cohesive-core/internal/core/domain"
 	"context"
 	"fmt"
+
+	core_domain "cohesive-core/internal/core/domain"
 
 	"github.com/google/uuid"
 )
@@ -29,7 +30,7 @@ func (s *ShoppingListsService) PatchItem(
 		return core_domain.ShoppingListItem{}, fmt.Errorf("get item from repository: %w", err)
 	}
 
-	if err := item.ApplyPatch(patch); err != nil {
+	if err = item.ApplyPatch(patch); err != nil {
 		return core_domain.ShoppingListItem{}, fmt.Errorf("apply item patch: %w", err)
 	}
 
