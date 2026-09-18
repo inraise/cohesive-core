@@ -20,8 +20,9 @@ type User struct {
 	LastName  *string
 	Age       *int
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	IsVerified bool
 }
 
 func NewUser(
@@ -31,6 +32,7 @@ func NewUser(
 	lastName *string,
 	age *int,
 	createdAt, updatedAt time.Time,
+	isVerified bool,
 ) User {
 	return User{
 		ID:           ID,
@@ -42,6 +44,7 @@ func NewUser(
 		Age:          age,
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
+		IsVerified:   isVerified,
 	}
 }
 
@@ -56,6 +59,7 @@ func NewUserUninitialized(email, passwordHash, firstName string, lastName *strin
 		Age:          age,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
+		IsVerified:   false,
 	}
 }
 
