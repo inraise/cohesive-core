@@ -18,7 +18,7 @@ func (r *AuthRepository) GetUserByEmail(
 	defer cancel()
 
 	query := `
-		SELECT id, version, email, password_hash, first_name, last_name, age, created_at, updated_at
+		SELECT id, version, email, password_hash, is_verified, first_name, last_name, age, created_at, updated_at
 		FROM users
 		WHERE email = $1;
 	`
@@ -31,6 +31,7 @@ func (r *AuthRepository) GetUserByEmail(
 		&userModel.Version,
 		&userModel.Email,
 		&userModel.PasswordHash,
+		&userModel.IsVerified,
 		&userModel.FirstName,
 		&userModel.LastName,
 		&userModel.Age,
@@ -53,6 +54,7 @@ func (r *AuthRepository) GetUserByEmail(
 		userModel.FirstName,
 		userModel.LastName,
 		userModel.Age,
+		userModel.IsVerified,
 		userModel.CreatedAt,
 		userModel.UpdatedAt,
 	)
