@@ -12,6 +12,7 @@ type UserModel struct {
 
 	Email        string
 	PasswordHash string
+	IsVerified   bool
 
 	FirstName string
 	LastName  *string
@@ -29,5 +30,17 @@ type RefreshTokenModel struct {
 
 	ExpiresAt time.Time
 	RevokedAt *time.Time
+	CreatedAt time.Time
+}
+
+type EmailVerificationModel struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+
+	Email     string
+	TokenHash string
+
+	ExpiresAt time.Time
+	UsedAt    *time.Time
 	CreatedAt time.Time
 }

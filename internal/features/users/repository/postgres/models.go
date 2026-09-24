@@ -12,6 +12,7 @@ type UserModel struct {
 
 	Email        string
 	PasswordHash string
+	IsVerified   bool
 
 	FirstName string
 	LastName  *string
