@@ -10,20 +10,30 @@ import (
 	core_pool "cohesive-core/internal/core/repository/postgres/pool"
 )
 
-func (r *AuthRepository) GetUserByEmail(
+func (r *AuthRepository) VerifyEmailByHash(
 	ctx context.Context,
-	email string,
+	tokenHash string,
 ) (core_domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
 	query := `
-		SELECT id, version, email, password_hash, is_verified, first_name, last_name, age, created_at, updated_at
-		FROM users
-		WHERE email = $1;
+		WITH valid_verification AS (
+			UPDATE email_verifications
+			SET used_at = now()
+			WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
+			RETURNING user_id
+		)
+		UPDATE users
+		SET is_verified = true, updated_at = now()
+		FROM valid_verification
+		WHERE users.id = valid_verification.user_id
+		RETURNING
+			users.id, users.version, users.email, users.password_hash, users.is_verified,
+			users.first_name, users.last_name, users.age, users.created_at, users.updated_at;
 	`
 
-	row := r.pool.QueryRow(ctx, query, email)
+	row := r.pool.QueryRow(ctx, query, tokenHash)
 
 	var userModel UserModel
 	err := row.Scan(
@@ -40,13 +50,16 @@ func (r *AuthRepository) GetUserByEmail(
 	)
 	if err != nil {
 		if errors.Is(err, core_pool.ErrNoRows) {
-			return core_domain.User{}, fmt.Errorf("user with email %q: %w", email, core_errors.ErrNotFound)
+			return core_domain.User{}, fmt.Errorf(
+				"verification token is invalid, expired, or already used: %w",
+				core_errors.ErrInvalidArgument,
+			)
 		}
 
 		return core_domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
 
-	userDomain := core_domain.NewUser(
+	return core_domain.NewUser(
 		userModel.ID,
 		userModel.Version,
 		userModel.Email,
@@ -57,7 +70,5 @@ func (r *AuthRepository) GetUserByEmail(
 		userModel.IsVerified,
 		userModel.CreatedAt,
 		userModel.UpdatedAt,
-	)
-
-	return userDomain, nil
+	), nil
 }

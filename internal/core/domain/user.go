@@ -1,10 +1,9 @@
 package core_domain
 
 import (
+	core_errors "cohesive-core/internal/core/errors"
 	"fmt"
 	"time"
-
-	core_errors "cohesive-core/internal/core/errors"
 
 	"github.com/google/uuid"
 )
@@ -15,6 +14,7 @@ type User struct {
 
 	Email        string
 	PasswordHash string
+	IsVerified   bool
 
 	FirstName string
 	LastName  *string
@@ -30,6 +30,7 @@ func NewUser(
 	email, passwordHash, firstName string,
 	lastName *string,
 	age *int,
+	isVerified bool,
 	createdAt, updatedAt time.Time,
 ) User {
 	return User{
@@ -42,6 +43,7 @@ func NewUser(
 		Age:          age,
 		CreatedAt:    createdAt,
 		UpdatedAt:    updatedAt,
+		IsVerified:   isVerified,
 	}
 }
 
@@ -56,6 +58,7 @@ func NewUserUninitialized(email, passwordHash, firstName string, lastName *strin
 		Age:          age,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
+		IsVerified:   false,
 	}
 }
 
@@ -70,7 +73,7 @@ func (u *User) Validate() error {
 	}
 
 	firstNameLen := len([]rune(u.FirstName))
-	if firstNameLen < 5 || firstNameLen > 100 {
+	if firstNameLen < 3 || firstNameLen > 100 {
 		return fmt.Errorf(
 			"invalid `FirstName` len: %d: %w",
 			firstNameLen,
@@ -80,7 +83,7 @@ func (u *User) Validate() error {
 
 	if u.LastName != nil {
 		lastNameLen := len([]rune(*u.LastName))
-		if lastNameLen < 5 || lastNameLen > 100 {
+		if lastNameLen < 3 || lastNameLen > 100 {
 			return fmt.Errorf(
 				"invalid `LastName` len: %d: %w",
 				lastNameLen,

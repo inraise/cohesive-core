@@ -15,15 +15,16 @@ func (r *AuthRepository) CreateUser(
 	defer cancel()
 
 	query := `
-		INSERT INTO users (version, email, password_hash, first_name, last_name, age, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, version, email, password_hash, first_name, last_name, age, created_at, updated_at;
+		INSERT INTO users (version, email, password_hash, is_verified, first_name, last_name, age, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id, version, email, password_hash, is_verified, first_name, last_name, age, created_at, updated_at;
 	`
 
 	row := r.pool.QueryRow(ctx, query,
 		user.Version,
 		user.Email,
 		user.PasswordHash,
+		user.IsVerified,
 		user.FirstName,
 		user.LastName,
 		user.Age,
@@ -37,6 +38,7 @@ func (r *AuthRepository) CreateUser(
 		&userModel.Version,
 		&userModel.Email,
 		&userModel.PasswordHash,
+		&userModel.IsVerified,
 		&userModel.FirstName,
 		&userModel.LastName,
 		&userModel.Age,
@@ -55,6 +57,7 @@ func (r *AuthRepository) CreateUser(
 		userModel.FirstName,
 		userModel.LastName,
 		userModel.Age,
+		userModel.IsVerified,
 		user.CreatedAt,
 		user.UpdatedAt,
 	)
