@@ -36,6 +36,7 @@ func TestAuthService_LoginUser(t *testing.T) {
 		"Nikita",
 		nil,
 		nil,
+		false,
 		time.Now(),
 		time.Now(),
 	)
