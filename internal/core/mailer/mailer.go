@@ -49,15 +49,15 @@ func (m *smtpMailer) sendImplicitTLS(addr string, auth smtp.Auth, to string, mes
 	}
 	defer client.Close()
 
-	if err := client.Auth(auth); err != nil {
+	if err = client.Auth(auth); err != nil {
 		return fmt.Errorf("smtp auth: %w", err)
 	}
 
-	if err := client.Mail(m.config.From); err != nil {
+	if err = client.Mail(m.config.From); err != nil {
 		return fmt.Errorf("smtp mail from: %w", err)
 	}
 
-	if err := client.Rcpt(to); err != nil {
+	if err = client.Rcpt(to); err != nil {
 		return fmt.Errorf("smtp rcpt to: %w", err)
 	}
 
