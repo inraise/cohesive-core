@@ -30,8 +30,14 @@ func (s *UsersService) PatchMe(
 		return core_domain.User{}, fmt.Errorf("get user from repository: %w", err)
 	}
 
+	emailChanged := patch.Email.Set && patch.Email.Value != nil && *patch.Email.Value != user.Email
+
 	if err = user.ApplyPatch(patch); err != nil {
 		return core_domain.User{}, fmt.Errorf("apply user patch: %w", err)
+	}
+
+	if emailChanged {
+		user.IsVerified = false
 	}
 
 	patchedUser, err := s.usersRepository.PatchMe(ctx, id, user)
