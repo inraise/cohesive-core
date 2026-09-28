@@ -75,6 +75,15 @@ func FromContext(ctx context.Context) *Logger {
 	return log
 }
 
+func FromContextOrNop(ctx context.Context) *Logger {
+	log, ok := ctx.Value(key).(*Logger)
+	if !ok {
+		return &Logger{Logger: zap.NewNop()}
+	}
+
+	return log
+}
+
 func (l *Logger) With(field ...zap.Field) *Logger {
 	return &Logger{
 		Logger: l.Logger.With(field...),
