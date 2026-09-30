@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func generateRefreshToken() (string, error) {
+func generateToken() (string, error) {
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {
 		return "", fmt.Errorf("generate random bytes: %w", err)
@@ -25,7 +25,7 @@ func generateRefreshToken() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-func hashRefreshToken(token string) string {
+func hashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 
 	return hex.EncodeToString(sum[:])
@@ -35,14 +35,14 @@ func (s *AuthService) issueRefreshToken(
 	ctx context.Context,
 	userID uuid.UUID,
 ) (string, error) {
-	plainToken, err := generateRefreshToken()
+	plainToken, err := generateToken()
 	if err != nil {
 		return "", fmt.Errorf("generate refresh token: %w", err)
 	}
 
 	tokenDomain := core_domain.NewRefreshTokenUninitialized(
 		userID,
-		hashRefreshToken(plainToken),
+		hashToken(plainToken),
 		time.Now().Add(s.refreshTTL),
 	)
 
@@ -57,7 +57,7 @@ func (s *AuthService) RefreshToken(
 	ctx context.Context,
 	refreshTokenPlain string,
 ) (*LoginDTOResponse, error) {
-	stored, err := s.authRepository.GetRefreshTokenByHash(ctx, hashRefreshToken(refreshTokenPlain))
+	stored, err := s.authRepository.GetRefreshTokenByHash(ctx, hashToken(refreshTokenPlain))
 	if err != nil {
 		if errors.Is(err, core_errors.ErrNotFound) {
 			return nil, fmt.Errorf("invalid refresh token: %w", core_errors.ErrUnauthorized)
@@ -68,6 +68,19 @@ func (s *AuthService) RefreshToken(
 
 	if !stored.IsValid() {
 		return nil, fmt.Errorf("refresh token is expired or revoked: %w", core_errors.ErrUnauthorized)
+	}
+
+	user, err := s.authRepository.GetUserByID(ctx, stored.UserID)
+	if err != nil {
+		if errors.Is(err, core_errors.ErrNotFound) {
+			return nil, fmt.Errorf("user of refresh token not found: %w", core_errors.ErrUnauthorized)
+		}
+
+		return nil, fmt.Errorf("get user from repository: %w", err)
+	}
+
+	if !user.IsVerified {
+		return nil, fmt.Errorf("email is not verified: %w", core_errors.ErrForbidden)
 	}
 
 	if err = s.authRepository.RevokeRefreshToken(ctx, stored.ID); err != nil {
