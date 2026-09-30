@@ -1,7 +1,9 @@
 package core_verification
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -19,7 +21,31 @@ func NewConfig() (Config, error) {
 		return Config{}, fmt.Errorf("process envconfig: %w", err)
 	}
 
+	if err := config.validate(); err != nil {
+		return Config{}, fmt.Errorf("validate config: %w", err)
+	}
+
 	return config, nil
+}
+
+func (c Config) validate() error {
+	base, err := url.Parse(c.BaseURL)
+	if err != nil {
+		return fmt.Errorf("EMAIL_VERIFICATION_BASE_URL is not a valid URL: %w", err)
+	}
+
+	if (base.Scheme != "http" && base.Scheme != "https") || base.Host == "" {
+		return errors.New(
+			"EMAIL_VERIFICATION_BASE_URL must be an absolute http(s) URL, " +
+				"e.g. https://api.example.com/api/v1/auth/verify-email",
+		)
+	}
+
+	if c.TokenTTL <= 0 {
+		return errors.New("EMAIL_VERIFICATION_TOKEN_TTL must be positive")
+	}
+
+	return nil
 }
 
 func NewConfigMust() Config {
