@@ -37,6 +37,10 @@ func (s *AuthService) LoginUser(
 		return nil, fmt.Errorf("invalid email or password: %w", core_errors.ErrInvalidArgument)
 	}
 
+	if !user.IsVerified {
+		return nil, fmt.Errorf("email is not verified: %w", core_errors.ErrForbidden)
+	}
+
 	accessToken, expiresAt, err := s.tokenManager.GenerateAccessToken(user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)

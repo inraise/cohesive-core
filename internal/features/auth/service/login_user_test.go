@@ -36,10 +36,13 @@ func TestAuthService_LoginUser(t *testing.T) {
 		"Nikita",
 		nil,
 		nil,
-		false,
+		true,
 		time.Now(),
 		time.Now(),
 	)
+
+	unverifiedUser := existingUser
+	unverifiedUser.IsVerified = false
 
 	tests := []struct {
 		name      string
@@ -69,12 +72,44 @@ func TestAuthService_LoginUser(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:     "неподтверждённый email: токены не выдаются, ErrForbidden",
+			email:    unverifiedUser.Email,
+			password: correctPassword,
+			repo: &mockAuthRepository{
+				getUserByEmailFunc: func(_ context.Context, _ string) (core_domain.User, error) {
+					return unverifiedUser, nil
+				},
+				createRefreshTokenFunc: func(
+					_ context.Context,
+					_ core_domain.RefreshToken,
+				) (core_domain.RefreshToken, error) {
+					t.Fatal("refresh-токен не должен выпускаться для неподтверждённого пользователя")
+
+					return core_domain.RefreshToken{}, nil
+				},
+			},
+			wantErr:   true,
+			wantErrIs: core_errors.ErrForbidden,
+		},
+		{
 			name:     "неверный пароль маскируется под ErrInvalidArgument",
 			email:    existingUser.Email,
 			password: "totally-wrong-password",
 			repo: &mockAuthRepository{
 				getUserByEmailFunc: func(_ context.Context, _ string) (core_domain.User, error) {
 					return existingUser, nil
+				},
+			},
+			wantErr:   true,
+			wantErrIs: core_errors.ErrInvalidArgument,
+		},
+		{
+			name:     "неподтверждённый email с неверным паролем: статус подтверждения не раскрывается",
+			email:    unverifiedUser.Email,
+			password: "totally-wrong-password",
+			repo: &mockAuthRepository{
+				getUserByEmailFunc: func(_ context.Context, _ string) (core_domain.User, error) {
+					return unverifiedUser, nil
 				},
 			},
 			wantErr:   true,
