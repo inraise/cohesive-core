@@ -6,6 +6,8 @@ import (
 
 	core_domain "cohesive-core/internal/core/domain"
 	core_jwt "cohesive-core/internal/core/jwt"
+	core_mailer "cohesive-core/internal/core/mailer"
+	core_verification "cohesive-core/internal/core/verification"
 
 	"github.com/google/uuid"
 )
@@ -14,6 +16,9 @@ type AuthService struct {
 	authRepository AuthRepository
 	tokenManager   *core_jwt.TokenManager
 	refreshTTL     time.Duration
+
+	mailer       core_mailer.Mailer
+	verification core_verification.Config
 }
 
 type AuthRepository interface {
@@ -25,6 +30,11 @@ type AuthRepository interface {
 	GetUserByEmail(
 		ctx context.Context,
 		email string,
+	) (core_domain.User, error)
+
+	GetUserByID(
+		ctx context.Context,
+		id uuid.UUID,
 	) (core_domain.User, error)
 
 	CreateRefreshToken(
@@ -41,16 +51,30 @@ type AuthRepository interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) error
+
+	CreateEmailVerification(
+		ctx context.Context,
+		verification core_domain.EmailVerification,
+	) (core_domain.EmailVerification, error)
+
+	VerifyEmailByHash(
+		ctx context.Context,
+		tokenHash string,
+	) (core_domain.User, error)
 }
 
 func NewAuthService(
 	authRepository AuthRepository,
 	tokenManager *core_jwt.TokenManager,
 	refreshTTL time.Duration,
+	mailer core_mailer.Mailer,
+	verification core_verification.Config,
 ) *AuthService {
 	return &AuthService{
 		authRepository: authRepository,
 		tokenManager:   tokenManager,
 		refreshTTL:     refreshTTL,
+		mailer:         mailer,
+		verification:   verification,
 	}
 }
