@@ -11,10 +11,12 @@ import (
 	core_config "cohesive-core/internal/core/config"
 	core_jwt "cohesive-core/internal/core/jwt"
 	core_logger "cohesive-core/internal/core/logger"
+	core_mailer "cohesive-core/internal/core/mailer"
 	core_pool_pgx "cohesive-core/internal/core/repository/postgres/pool/pgx"
 	core_pool_redis "cohesive-core/internal/core/repository/redis/pool"
 	core_transport_http_middleware "cohesive-core/internal/core/transport/http/middleware"
 	core_transport_http_server "cohesive-core/internal/core/transport/http/server"
+	core_verification "cohesive-core/internal/core/verification"
 	auth_repository_postgres "cohesive-core/internal/features/auth/repository/postgres"
 	auth_service "cohesive-core/internal/features/auth/service"
 	auth_transport_http "cohesive-core/internal/features/auth/transport/http"
@@ -86,14 +88,24 @@ func main() {
 	}
 	defer redisClient.Close()
 
+	logger.Debug("initializing mailer")
+	mailer := core_mailer.NewMailer(core_mailer.NewConfigMust())
+	verificationConfig := core_verification.NewConfigMust()
+
 	logger.Debug("initializing feature", zap.String("feature", "auth"))
 	authRepository := auth_repository_postgres.NewAuthRepository(pool)
-	authService := auth_service.NewAuthService(authRepository, tokenManager, jwtConfig.RefreshTTL)
+	authService := auth_service.NewAuthService(
+		authRepository,
+		tokenManager,
+		jwtConfig.RefreshTTL,
+		mailer,
+		verificationConfig,
+	)
 	authTransportHTTP := auth_transport_http.NewAuthHTTPHandler(authService, redisClient)
 
 	logger.Debug("initializing feature", zap.String("feature", "users"))
 	usersRepository := users_repository_postgres.NewUsersRepository(pool)
-	usersService := users_service.NewUsersService(usersRepository)
+	usersService := users_service.NewUsersService(usersRepository, authService)
 	usersTransportHTTP := users_transport_http.NewUsersHTTPHandler(usersService, tokenManager)
 
 	logger.Debug("initializing feature", zap.String("feature", "households"))
