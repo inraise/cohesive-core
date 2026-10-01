@@ -102,6 +102,21 @@ func (h *AuthHTTPHandler) Routes() []core_transport_http_server.Route {
 			Handler: h.LogoutUser,
 		},
 		{
+			Method:  http.MethodGet,
+			Path:    "/auth/verify-email",
+			Handler: h.VerifyEmailPage,
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/auth/verify-email/confirm",
+			Handler: h.ConfirmVerifyEmail,
+			Middleware: []core_transport_http_middleware.Middleware{
+				core_transport_http_middleware.RateLimit(
+					h.redisClient, "verify-email", verifyEmailRateLimit, verifyEmailRateWindow,
+				),
+			},
+		},
+		{
 			Method:  http.MethodPost,
 			Path:    "/auth/verify-email",
 			Handler: h.VerifyEmail,
