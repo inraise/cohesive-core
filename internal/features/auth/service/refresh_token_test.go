@@ -32,6 +32,9 @@ func TestAuthService_RefreshToken_Success(t *testing.T) {
 		getRefreshTokenByHashFunc: func(_ context.Context, _ string) (core_domain.RefreshToken, error) {
 			return stored, nil
 		},
+		getUserByIDFunc: func(_ context.Context, id uuid.UUID) (core_domain.User, error) {
+			return newVerifiedUser(id), nil
+		},
 		revokeRefreshTokenFunc: func(_ context.Context, id uuid.UUID) error {
 			revokedID = id
 
@@ -116,4 +119,75 @@ func TestAuthService_RefreshToken_Rejected(t *testing.T) {
 			assert.ErrorIs(t, err, core_errors.ErrUnauthorized)
 		})
 	}
+}
+
+func newVerifiedUser(id uuid.UUID) core_domain.User {
+	user := newUnverifiedUser("user@example.com")
+	user.ID = id
+	user.IsVerified = true
+
+	return user
+}
+
+func TestAuthService_RefreshToken_UnverifiedUserIsBlocked(t *testing.T) {
+	userID := uuid.New()
+
+	repo := &mockAuthRepository{
+		getRefreshTokenByHashFunc: func(_ context.Context, _ string) (core_domain.RefreshToken, error) {
+			return core_domain.RefreshToken{
+				ID:        uuid.New(),
+				UserID:    userID,
+				ExpiresAt: time.Now().Add(time.Hour),
+			}, nil
+		},
+		getUserByIDFunc: func(_ context.Context, id uuid.UUID) (core_domain.User, error) {
+			user := newUnverifiedUser("user@example.com")
+			user.ID = id
+
+			return user, nil
+		},
+		revokeRefreshTokenFunc: func(_ context.Context, _ uuid.UUID) error {
+			t.Fatal("refresh-токен не должен отзываться: после подтверждения почты он должен снова работать")
+
+			return nil
+		},
+		createRefreshTokenFunc: func(
+			_ context.Context,
+			_ core_domain.RefreshToken,
+		) (core_domain.RefreshToken, error) {
+			t.Fatal("новый refresh-токен не должен выпускаться для неподтверждённого пользователя")
+
+			return core_domain.RefreshToken{}, nil
+		},
+	}
+
+	service := newTestAuthService(t, repo)
+
+	result, err := service.RefreshToken(context.Background(), "some-plain-refresh-token")
+
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, core_errors.ErrForbidden)
+}
+
+func TestAuthService_RefreshToken_UserNotFoundIsUnauthorized(t *testing.T) {
+	repo := &mockAuthRepository{
+		getRefreshTokenByHashFunc: func(_ context.Context, _ string) (core_domain.RefreshToken, error) {
+			return core_domain.RefreshToken{
+				ID:        uuid.New(),
+				UserID:    uuid.New(),
+				ExpiresAt: time.Now().Add(time.Hour),
+			}, nil
+		},
+		getUserByIDFunc: func(_ context.Context, _ uuid.UUID) (core_domain.User, error) {
+			return core_domain.User{}, fmt.Errorf("user: %w", core_errors.ErrNotFound)
+		},
+	}
+
+	service := newTestAuthService(t, repo)
+
+	_, err := service.RefreshToken(context.Background(), "some-plain-refresh-token")
+
+	require.Error(t, err)
+	assert.ErrorIs(t, err, core_errors.ErrUnauthorized)
 }

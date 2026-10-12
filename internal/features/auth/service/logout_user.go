@@ -12,7 +12,7 @@ func (s *AuthService) LogoutUser(
 	ctx context.Context,
 	refreshTokenPlain string,
 ) error {
-	stored, err := s.authRepository.GetRefreshTokenByHash(ctx, hashRefreshToken(refreshTokenPlain))
+	stored, err := s.authRepository.GetRefreshTokenByHash(ctx, hashToken(refreshTokenPlain))
 	if err != nil {
 		if errors.Is(err, core_errors.ErrNotFound) {
 			return nil

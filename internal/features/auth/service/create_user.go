@@ -5,7 +5,9 @@ import (
 	"fmt"
 
 	core_domain "cohesive-core/internal/core/domain"
+	core_logger "cohesive-core/internal/core/logger"
 
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -37,6 +39,14 @@ func (s *AuthService) CreateUser(
 	userResp, err := s.authRepository.CreateUser(ctx, userDomain)
 	if err != nil {
 		return core_domain.User{}, fmt.Errorf("create user: %w", err)
+	}
+
+	if err = s.SendEmailVerification(ctx, userResp); err != nil {
+		core_logger.FromContextOrNop(ctx).Error(
+			"failed to issue email verification",
+			zap.String("user_id", userResp.ID.String()),
+			zap.Error(err),
+		)
 	}
 
 	return userResp, nil

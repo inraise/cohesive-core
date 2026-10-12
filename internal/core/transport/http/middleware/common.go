@@ -2,6 +2,7 @@ package core_transport_http_middleware
 
 import (
 	"net/http"
+	"net/url"
 	"time"
 
 	core_logger "cohesive-core/internal/core/logger"
@@ -31,6 +32,30 @@ func RequestID() Middleware {
 	}
 }
 
+var sensitiveQueryParams = []string{"token"}
+
+func sanitizeURL(u *url.URL) string {
+	query := u.Query()
+	redacted := false
+
+	for _, param := range sensitiveQueryParams {
+		if query.Has(param) {
+			query.Set(param, "REDACTED")
+
+			redacted = true
+		}
+	}
+
+	if !redacted {
+		return u.String()
+	}
+
+	clone := *u
+	clone.RawQuery = query.Encode()
+
+	return clone.String()
+}
+
 func Logger(log *core_logger.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +63,7 @@ func Logger(log *core_logger.Logger) Middleware {
 
 			l := log.With(
 				zap.String("request_id", requestID),
-				zap.String("url", r.URL.String()),
+				zap.String("url", sanitizeURL(r.URL)),
 			)
 
 			ctx := core_logger.ToContext(r.Context(), l)

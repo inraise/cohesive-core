@@ -33,6 +33,7 @@ func (r *LoginRequest) Validate() error {
 // @Param request body LoginRequest true "LoginUser тело запроса"
 // @Success 200 {object} auth_service.LoginDTOResponse "Успешная авторизация"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Email не подтверждён"
 // @Failure 429 {object} core_transport_http_response.ErrorResponse "Too many requests"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /auth/login [post]
@@ -57,6 +58,15 @@ func (h *AuthHTTPHandler) LoginUser(rw http.ResponseWriter, r *http.Request) {
 			responseHandler.ErrorResponse(
 				err,
 				"invalid email or password",
+			)
+
+			return
+		}
+
+		if errors.Is(err, core_errors.ErrForbidden) {
+			responseHandler.ErrorResponse(
+				err,
+				"email is not verified",
 			)
 
 			return

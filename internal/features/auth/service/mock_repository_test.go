@@ -13,6 +13,8 @@ type mockAuthRepository struct {
 
 	getUserByEmailFunc func(ctx context.Context, email string) (core_domain.User, error)
 
+	getUserByIDFunc func(ctx context.Context, id uuid.UUID) (core_domain.User, error)
+
 	createRefreshTokenFunc func(
 		ctx context.Context,
 		token core_domain.RefreshToken,
@@ -21,6 +23,13 @@ type mockAuthRepository struct {
 	getRefreshTokenByHashFunc func(ctx context.Context, tokenHash string) (core_domain.RefreshToken, error)
 
 	revokeRefreshTokenFunc func(ctx context.Context, id uuid.UUID) error
+
+	createEmailVerificationFunc func(
+		ctx context.Context,
+		verification core_domain.EmailVerification,
+	) (core_domain.EmailVerification, error)
+
+	verifyEmailByHashFunc func(ctx context.Context, tokenHash string) (core_domain.User, error)
 }
 
 func (m *mockAuthRepository) CreateUser(
@@ -76,4 +85,37 @@ func (m *mockAuthRepository) RevokeRefreshToken(
 	}
 
 	return m.revokeRefreshTokenFunc(ctx, id)
+}
+
+func (m *mockAuthRepository) CreateEmailVerification(
+	ctx context.Context,
+	verification core_domain.EmailVerification,
+) (core_domain.EmailVerification, error) {
+	if m.createEmailVerificationFunc == nil {
+		panic("mockAuthRepository.CreateEmailVerification called but createEmailVerificationFunc is not set")
+	}
+
+	return m.createEmailVerificationFunc(ctx, verification)
+}
+
+func (m *mockAuthRepository) VerifyEmailByHash(
+	ctx context.Context,
+	tokenHash string,
+) (core_domain.User, error) {
+	if m.verifyEmailByHashFunc == nil {
+		panic("mockAuthRepository.VerifyEmailByHash called but verifyEmailByHashFunc is not set")
+	}
+
+	return m.verifyEmailByHashFunc(ctx, tokenHash)
+}
+
+func (m *mockAuthRepository) GetUserByID(
+	ctx context.Context,
+	id uuid.UUID,
+) (core_domain.User, error) {
+	if m.getUserByIDFunc == nil {
+		panic("mockAuthRepository.GetUserByID called but getUserByIDFunc is not set")
+	}
+
+	return m.getUserByIDFunc(ctx, id)
 }

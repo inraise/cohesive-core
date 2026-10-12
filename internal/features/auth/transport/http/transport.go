@@ -18,6 +18,12 @@ const (
 
 	refreshRateLimit  = 20
 	refreshRateWindow = time.Minute
+
+	verifyEmailRateLimit  = 10
+	verifyEmailRateWindow = time.Minute
+
+	resendVerificationRateLimit  = 3
+	resendVerificationRateWindow = 10 * time.Minute
 )
 
 type AuthHTTPHandler struct {
@@ -44,6 +50,16 @@ type AuthService interface {
 	LogoutUser(
 		ctx context.Context,
 		refreshToken string,
+	) error
+
+	VerifyEmail(
+		ctx context.Context,
+		token string,
+	) (core_domain.User, error)
+
+	ResendVerification(
+		ctx context.Context,
+		email string,
 	) error
 }
 
@@ -84,6 +100,41 @@ func (h *AuthHTTPHandler) Routes() []core_transport_http_server.Route {
 			Method:  http.MethodPost,
 			Path:    "/auth/logout",
 			Handler: h.LogoutUser,
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/auth/verify-email",
+			Handler: h.VerifyEmailPage,
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/auth/verify-email/confirm",
+			Handler: h.ConfirmVerifyEmail,
+			Middleware: []core_transport_http_middleware.Middleware{
+				core_transport_http_middleware.RateLimit(
+					h.redisClient, "verify-email", verifyEmailRateLimit, verifyEmailRateWindow,
+				),
+			},
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/auth/verify-email",
+			Handler: h.VerifyEmail,
+			Middleware: []core_transport_http_middleware.Middleware{
+				core_transport_http_middleware.RateLimit(
+					h.redisClient, "verify-email", verifyEmailRateLimit, verifyEmailRateWindow,
+				),
+			},
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/auth/resend-verification",
+			Handler: h.ResendVerification,
+			Middleware: []core_transport_http_middleware.Middleware{
+				core_transport_http_middleware.RateLimit(
+					h.redisClient, "resend-verification", resendVerificationRateLimit, resendVerificationRateWindow,
+				),
+			},
 		},
 	}
 }

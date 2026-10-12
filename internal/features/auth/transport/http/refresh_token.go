@@ -33,6 +33,7 @@ func (r *RefreshTokenRequest) Validate() error {
 // @Success 200 {object} auth_service.LoginDTOResponse "Токен успешно обновлён"
 // @Failure 400 {object} core_transport_http_response.ErrorResponse "Bad request"
 // @Failure 401 {object} core_transport_http_response.ErrorResponse "Invalid or expired refresh token"
+// @Failure 403 {object} core_transport_http_response.ErrorResponse "Email не подтверждён"
 // @Failure 429 {object} core_transport_http_response.ErrorResponse "Too many requests"
 // @Failure 500 {object} core_transport_http_response.ErrorResponse "Internal server error"
 // @Router /auth/refresh [post]
@@ -57,6 +58,15 @@ func (h *AuthHTTPHandler) RefreshToken(rw http.ResponseWriter, r *http.Request) 
 			responseHandler.ErrorResponse(
 				err,
 				"invalid or expired refresh token",
+			)
+
+			return
+		}
+
+		if errors.Is(err, core_errors.ErrForbidden) {
+			responseHandler.ErrorResponse(
+				err,
+				"email is not verified",
 			)
 
 			return
