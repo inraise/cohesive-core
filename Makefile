@@ -89,7 +89,7 @@ lint-fix:
 	@golangci-lint run --fix ./...
 
 refresh-swag:
-	@swag init -g main.go -o ../../docs -d ./cmd/cohesive,./internal/features,./internal/core --parseDependency --parseInternal
+	@$(shell go env GOPATH)/bin/swag init -g main.go -o ../../docs -d ./cmd/cohesive,./internal/features,./internal/core --parseDependency --parseInternal
 	
 test:
 	@go test ./... -race
