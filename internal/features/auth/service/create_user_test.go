@@ -26,6 +26,12 @@ func TestAuthService_CreateUser(t *testing.T) {
 
 				return user, nil
 			},
+			createEmailVerificationFunc: func(
+				_ context.Context,
+				verification core_domain.EmailVerification,
+			) (core_domain.EmailVerification, error) {
+				return verification, nil
+			},
 		}
 
 		service := newTestAuthService(t, repo)

@@ -22,12 +22,13 @@ func (r *AuthRepository) VerifyEmailByHash(
 			UPDATE email_verifications
 			SET used_at = now()
 			WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
-			RETURNING user_id
+			RETURNING user_id, email
 		)
 		UPDATE users
 		SET is_verified = true, updated_at = now()
 		FROM valid_verification
 		WHERE users.id = valid_verification.user_id
+		  AND users.email = valid_verification.email
 		RETURNING
 			users.id, users.version, users.email, users.password_hash, users.is_verified,
 			users.first_name, users.last_name, users.age, users.created_at, users.updated_at;

@@ -10,6 +10,16 @@ import (
 
 type UsersService struct {
 	usersRepository UsersRepository
+	emailVerifier   EmailVerifier
+}
+
+// EmailVerifier отправляет пользователю письмо с подтверждением email.
+// Реализацию (фича auth) подставляет main.go, users про auth ничего не знает.
+type EmailVerifier interface {
+	SendEmailVerification(
+		ctx context.Context,
+		user core_domain.User,
+	) error
 }
 
 type UsersRepository interface {
@@ -32,8 +42,10 @@ type UsersRepository interface {
 
 func NewUsersService(
 	usersRepository UsersRepository,
+	emailVerifier EmailVerifier,
 ) *UsersService {
 	return &UsersService{
 		usersRepository: usersRepository,
+		emailVerifier:   emailVerifier,
 	}
 }
